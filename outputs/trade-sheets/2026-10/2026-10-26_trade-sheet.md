@@ -2,15 +2,15 @@
 
 **CHECK** · 24 trades (3 TRADE+) on 6 calls, 31.5% of bankroll
 
-_Generated 2026-10-26 22:49 ET from `kalshi.v_mentions_board`. Limit orders about 1¢ better than the quote; post at the midpoint if the spread is 10¢+._
+_Generated 2026-10-26 23:03 ET from `kalshi.v_mentions_board`. Limit orders about 1¢ better than the quote; post at the midpoint if the spread is 10¢+._
 
 ## Preflight
 
-- OK   reconcile: 22.5h ago
-- OK   filings: 4.3h ago
-- OK   sync: 1.8h ago
-- OK   transcripts: 21.7h ago
-- OK   quotes: 0.7h ago
+- OK   reconcile: 22.8h ago
+- OK   filings: 4.5h ago
+- OK   sync: 2.0h ago
+- OK   transcripts: 22.0h ago
+- OK   quotes: 0.9h ago
 - OK   model fitted 14 days ago
 
 ## Needs you

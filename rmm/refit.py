@@ -8,8 +8,9 @@ Same four logistic regressions, same walk-forward backtest, same calibration fac
 Each combined model's disagreement with the price is scaled by k, learned walk-forward.
 
 Differences from the R script, all deliberate:
-  - It never writes to the database. A refit is a challenger: it is saved under
-    outputs/models/vN_YYYY-MM-DD/ and goes live only when promoted.
+  - It never touches the live model. A refit is a challenger: saved under
+    outputs/models/vN_YYYY-MM-DD/ and, with --save, as version N in kalshi.model_versions. It goes
+    live only through kalshi.promote_model(N), which only the database owner can run.
   - The out-of-fold folds are drawn with a port of R's own set.seed(2024) / sample() (rmm/rrng.py),
     so a Python refit gives the same coefficients as refit_models.R on the same data.
   - v_model_training now names its date column call_date_est; it is read as call_date.
@@ -234,3 +235,35 @@ def render_md(r: Refit, version: str, cmp: pd.DataFrame | None, note: str = "") 
         out += [f"| {x['model']} | {x['term']} | {x['coef']:+.4f} |" for _, x in r.coefficients.iterrows()]
     out.append("")
     return "\n".join(out)
+
+
+# ---------------------------------------------------------------- versions in the database
+
+def metrics(r: Refit) -> dict:
+    return {s.stage: {"months": s.months, "markets": len(s.backtest), "brier_model": round(s.brier_model, 5),
+                      "brier_price": round(s.brier_price, 5), "k": round(s.k_final, 3)} for s in r.stages}
+
+
+def next_version() -> int:
+    from . import db
+    return int(db.query("select coalesce(max(version), 0) + 1 as v from kalshi.model_versions")[0]["v"])
+
+
+def save(r: Refit, version: int, notes: str = "") -> None:
+    """Store the refit as challenger `version` (one transaction). Needs the rmm_rw role."""
+    import json
+
+    from . import db
+    co = r.coefficients[r.coefficients["term"] != "calibration_k"][["model", "term", "coef"]]
+    k = r.coefficients[r.coefficients["term"] == "calibration_k"][["model", "term", "coef"]]
+    db.transaction([
+        ("insert into kalshi.model_versions (version, status, trained_through, fitted_at, source, metrics, notes) "
+         "values ($1, 'challenger', $2::date, now(), 'rmm refit', $3::jsonb, $4)",
+         [version, r.trained_through, json.dumps(metrics(r)), notes or None]),
+        ("insert into kalshi.model_version_coefficients (version, model, term, coef) "
+         "select $1, model, term, coef from jsonb_to_recordset($2::jsonb) as x(model text, term text, coef numeric)",
+         [version, pd.concat([co, k]).to_json(orient="records")]),
+        ("insert into kalshi.model_version_backtest (version, ticker, stage, p_model) "
+         "select $1, ticker, stage, p_model from jsonb_to_recordset($2::jsonb) as x(ticker text, stage text, p_model numeric)",
+         [version, r.backtest.to_json(orient="records")]),
+    ])

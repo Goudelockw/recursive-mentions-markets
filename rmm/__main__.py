@@ -15,8 +15,12 @@
 
   python -m rmm refit [--through YYYY-MM-DD]     Python port of refit_models.R (same results): walk-forward
                                                  backtest, k, final fit; writes outputs/models/vN_<date>/
-                                                 and compares with kalshi.model_coefficients. Never writes
-                                                 to the database; promotion is a separate step
+                                                 and compares with the live model; --save stores it as a
+                                                 challenger version (needs rmm_rw). Never changes the live
+                                                 model: promotion is select kalshi.promote_model(N)
+  python -m rmm models                           list model versions and which one is live
+  python -m rmm weekly [--save] [--refit]        weekly health checks, live grading, calibration; --save
+                                                 writes ops.*, --refit stores a challenger (both rmm_rw)
 
 trade-sheet writes outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html} and prints the
 status line, so a scheduled task can pass it straight to the notification.
@@ -80,11 +84,12 @@ def cmd_refit(a: argparse.Namespace) -> None:
     from . import refit
     if a.input:
         rows = pd.read_json(a.input) if a.input.endswith(".json") else pd.read_csv(a.input)
+        version = paths.next_model_version()
     else:
         rows = db.run_query(paths.query("model_training"))
+        version = refit.next_version()
     r = refit.run(rows, through=a.through)
     live = pd.DataFrame(db.run_query(paths.query("model_coefficients_live"))) if not a.input else None
-    version = paths.next_model_version()
     out = paths.model_dir(version, r.trained_through)
     out.mkdir(parents=True, exist_ok=True)
     r.coefficients.to_csv(out / "coefficients.csv", index=False)
@@ -92,10 +97,39 @@ def cmd_refit(a: argparse.Namespace) -> None:
     cmp = refit.compare(r.coefficients, live) if live is not None and len(live) else None
     (out / "fit-report.md").write_text(refit.render_md(r, f"v{version}", cmp))
     print(f"wrote {out.relative_to(paths.ROOT)}/ (coefficients.csv, backtest.csv, fit-report.md)")
+    if a.save:
+        refit.save(r, version, a.notes or "")
+        print(f"saved v{version} to kalshi.model_versions as a challenger")
     cs = {s.stage: s for s in r.stages}
     print(f"v{version} trained through {r.trained_through}: call-start Brier {cs['call_start'].brier_model:.4f} "
           f"vs price {cs['call_start'].brier_price:.4f}, k {cs['call_start'].k_final:.3f} / "
           f"{cs['early_24h'].k_final:.3f}")
+
+
+def cmd_models(a: argparse.Namespace) -> None:
+    rows = db.query("select version, status, trained_through::text, fitted_at::date::text as fitted, source, "
+                    "metrics->'call_start'->>'brier_model' as brier, metrics->'call_start'->>'brier_price' as price, "
+                    "metrics->'call_start'->>'k' as k from kalshi.model_versions order by version")
+    print(f"{'ver':<4} {'status':<11} {'through':<11} {'fitted':<11} {'source':<15} brier   price   k")
+    for r in rows:
+        print(f"v{r['version']:<3} {r['status']:<11} {r['trained_through']:<11} {r['fitted']:<11} {r['source']:<15} "
+              f"{r['brier'] or '–':<7} {r['price'] or '–':<7} {r['k'] or '–'}")
+    print("Promote with: select kalshi.promote_model(N);  (database owner only)")
+
+
+def cmd_weekly(a: argparse.Namespace) -> None:
+    from . import weekly
+    checks, metrics = weekly.run_checks(), weekly.run_metrics()
+    print(weekly.render(checks, metrics))
+    if a.save:
+        print(f"saved as ops run {weekly.save(checks, metrics)}")
+    if a.refit:
+        from . import refit
+        r = refit.run(db.run_query(paths.query("model_training")))
+        version = refit.next_version()
+        refit.save(r, version, "Weekly refit (challenger).")
+        cs = {s.stage: s for s in r.stages}["call_start"]
+        print(f"saved challenger v{version}: call-start Brier {cs.brier_model:.4f} vs price {cs.brier_price:.4f}, k {cs.k_final:.3f}")
 
 
 def main() -> None:
@@ -115,7 +149,14 @@ def main() -> None:
     rf = sub.add_parser("refit", help="refit the four mentions models as a challenger (no database writes)")
     rf.add_argument("--through", help="only calls on or before this date (YYYY-MM-DD)")
     rf.add_argument("--input", help="v_model_training as CSV or JSON instead of querying Neon")
+    rf.add_argument("--save", action="store_true", help="store it as a challenger in kalshi.model_versions (rmm_rw)")
+    rf.add_argument("--notes", help="note stored with the version")
     rf.set_defaults(fn=cmd_refit)
+    wk = sub.add_parser("weekly", help="health checks, live grading and calibration")
+    wk.add_argument("--save", action="store_true", help="write them to ops.* (rmm_rw)")
+    wk.add_argument("--refit", action="store_true", help="also refit and store a challenger version (rmm_rw)")
+    wk.set_defaults(fn=cmd_weekly)
+    sub.add_parser("models", help="list model versions and which one is live").set_defaults(fn=cmd_models)
     a = ap.parse_args()
     a.fn(a)
 
