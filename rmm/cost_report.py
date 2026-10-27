@@ -28,7 +28,7 @@ COMPUTE_RATE = 0.106      # $ per CU-hour, Neon Launch
 STORAGE_RATE = 0.35       # $ per GB-month, Neon Launch
 SUSPEND_MIN = 5           # Neon's default scale-to-zero delay
 CUT_OFF_RUN_MIN = 1       # a run with no finished_at (crashed or redeployed) counts as this long
-LEFTOVER_NAME = re.compile(r"(_old\d*|_bak|_backup|_tmp|_snapshot_?\d*|^wc_snapshot)", re.I)
+LEFTOVER_NAME = re.compile(r"((_old\d*|_bak|_backup|_tmp|_snapshot_?\d+)$|^wc_snapshot)", re.I)
 BIG_TABLE_BYTES = 500 * 1024**2
 
 

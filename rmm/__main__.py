@@ -27,6 +27,9 @@
                                                  writes ops.* and queues allowed fixes, --refit stores a
                                                  challenger (both rmm_rw)
   python -m rmm weekly-review [--page]           the Weekly Review page (checks, fixes, proposals, results)
+  python -m rmm librarian [--apply] [--no-db]    tidy check: naming, 90-day archive, docs that no longer
+                                                 match the code or database, leftover tables; --apply
+                                                 moves files (git mv) and writes the librarian log
 
 trade-sheet writes outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html} and prints the
 status line, so a scheduled task can pass it straight to the notification.
@@ -179,6 +182,21 @@ def cmd_weekly_review(a: argparse.Namespace) -> None:
         print(f"wrote {md.relative_to(paths.ROOT)} and {page.relative_to(paths.ROOT)}")
 
 
+def cmd_librarian(a: argparse.Namespace) -> None:
+    from . import librarian
+    today = date.fromisoformat(a.date) if a.date else datetime.now(ET).date()
+    r = librarian.run(today, apply=a.apply, use_db=not a.no_db)
+    text = librarian.render_md(r)
+    if a.apply:
+        out = paths.weekly(today, "librarian-log")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text)
+        print(f"wrote {out.relative_to(paths.ROOT)}")
+    else:
+        print(text)
+    print(r.headline)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="rmm")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -214,6 +232,11 @@ def main() -> None:
     md = sub.add_parser("models", help="list model versions and which one is live")
     md.add_argument("--page", action="store_true", help="also write outputs/models/index.html and README.md")
     md.set_defaults(fn=cmd_models)
+    lb = sub.add_parser("librarian", help="naming, archive, docs and leftover-table check")
+    lb.add_argument("--apply", action="store_true", help="move files (git mv) and write the librarian log")
+    lb.add_argument("--no-db", action="store_true", help="file checks only")
+    lb.add_argument("--date", help="today, default today in New York (tests)")
+    lb.set_defaults(fn=cmd_librarian)
     a = ap.parse_args()
     a.fn(a)
 

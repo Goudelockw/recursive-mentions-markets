@@ -281,6 +281,13 @@ The first source that applies wins:
 - **Mondays, 5:51am ET:** context features. Loads stock prices and EPS, labels valence / incentive / phrasing for markets with a call in the next 10 days, re-scores word tone, and refreshes `mv_market_context`, `mv_phrasing` and `mv_incentive_features`.
 - **Exec-change check:** CEO/CFO changes from SEC filings into `exec_tenures`.
 
+From `recursive-mentions-markets` (instructions in `agents/<task>/PROMPT.md`, read-only on Neon):
+- **Weekdays, 6:41am ET, Trade Sheet:** the day's trades and where they sit in the risk model.
+- **Sundays, 8:41pm ET, Cost Report:** what Neon cost this week and what to change.
+- **Sundays, 9:41pm ET, Ops:** after `research-weekly`; investigates warnings, drafts fixes for approval, publishes the Weekly Review.
+- **Sundays, 10:11pm ET, Model Review:** the week's challenger vs. the live model, sent before anything is promoted.
+- **Sundays, 10:41pm ET, Librarian:** naming, 90-day archive, docs checked against what runs, leftover tables.
+
 ---
 
 ## 5. Refitting the models (Python, versioned, since Oct 27)

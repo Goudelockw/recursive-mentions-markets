@@ -9,7 +9,7 @@ All tasks run on the Claude subscription as fresh cloud sessions.
 | [`cost-report/`](cost-report/PROMPT.md) | Sunday 20:41 | Live |
 | [`model-review/`](model-review/PROMPT.md) | Sunday 22:11 (after the Railway refit) | Live |
 | [`ops/`](ops/PROMPT.md) | Sunday 21:41 (after the Railway batch) | Live |
-| `librarian/` | Sunday 22:41 | Phase 3 |
+| [`librarian/`](librarian/PROMPT.md) | Sunday 22:41 (last of the batch) | Live |
 | `research/` | 1st Monday 05:41 | Phase 4 |
 
 ## Permission tiers (all tasks)

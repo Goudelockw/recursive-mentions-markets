@@ -60,8 +60,8 @@ Weekly Review.
 4. `python -m rmm weekly-review --page` (it reads the proposals file), then Artifact publish with
    `url` = the URL in `agents/ops/PAGE_URL` and `file_path` = `outputs/weekly/YYYY-Www_weekly-review.html`.
    If `PAGE_URL` is empty, publish a new page and write its URL there in the same commit.
-5. Commit the proposals file and the review files with the message `weekly review YYYY-Www: <headline>`
-   and push to `main`.
+5. Commit the proposals file and the review files with the message `weekly review YYYY-Www: <headline>`,
+   then `git pull --rebase` (another Sunday task may have pushed) and push to `main`.
 6. End with this message and nothing else (it becomes the notification):
 
    ```

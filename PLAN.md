@@ -59,7 +59,7 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] `ops.fix_requests` + kalshi-worker `ops-fixes` (Railway, daily 03:30 UTC): the weekly batch queues safe re-fetches (transcript gaps, CHECK DATE filings, settlement sweep); `ops-fixes` runs only allowlisted commands and logs each outcome
 - [x] Ops task (Sundays 21:41 ET): investigates what needs judgment, drafts proposals with SQL and sources, code fixes on `ops/*` branches, publishes the Weekly Review; you approve with "approve W44-n"
 - [x] Weekly Review page (`python -m rmm weekly-review --page`)
-- [ ] Librarian task: naming, archive, stale Neon branches, SYSTEM.md upkeep
+- [x] Librarian task (Sundays 22:41 ET) and `python -m rmm librarian`: naming rules, 90-day archive, docs checked against the code, database and Railway job runs, leftover tables as PR-tier migrations, the librarian log
 - [ ] Daily labeling for markets listed mid-week (SYSTEM.md open item)
 - [ ] Release-window fix for wrong ticker dates (SYSTEM.md open item)
 
@@ -79,6 +79,7 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 
 - ~~`NEON_API_KEY` for the cost report~~: not now. The report estimates from job runs.
 - ~~Rotate the `neondb_owner` password~~: not now.
+- ~~Stale Neon branch cleanup in the Librarian~~: needs `NEON_API_KEY` too; nothing creates branches yet. Revisit with phase 4 experiments.
 
 - ~~Grafana board~~: replaced by the Trade Sheet page and the weekly reports.
 - ~~15-minute `score-log` cron~~: replaced by logging at Trade Sheet time.

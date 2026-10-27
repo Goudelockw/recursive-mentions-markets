@@ -15,8 +15,10 @@ What is done and what is next is in [`PLAN.md`](PLAN.md). How the whole system w
 | Weekdays 06:41 | Trade Sheet | Claude scheduled task, runs `python -m rmm trade-sheet` | `outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`, the pinned Trade Sheet page, push + email |
 | Sunday 20:41 | Cost Report: what Neon costs, which jobs drive it, what to change | Claude scheduled task, runs `python -m rmm cost-report` | `outputs/weekly/YYYY-Www_cost-report.md`, `outputs/costs/neon-usage.csv`, push |
 | Sunday ~21:00 (Mon 01:00 UTC) | Weekly checks, live grading, calibration, challenger refit | Railway `research-weekly`: `python -m rmm weekly --save --refit` | `ops.*` tables, a challenger in `kalshi.model_versions` |
-| Sunday 21:41 | Ops: fix data gaps, write the Weekly Review | Claude scheduled task | `outputs/weekly/YYYY-Www_weekly-review.md` *(phase 3)* |
-| Sunday 22:41 | Librarian: keep the repo, outputs and Neon tidy | Claude scheduled task | `outputs/weekly/YYYY-Www_librarian-log.md` *(phase 3)* |
+| Sunday 21:41 | Ops: fix data gaps, write the Weekly Review | Claude scheduled task | `outputs/weekly/YYYY-Www_weekly-review.{md,html}`, the Weekly Review page, push |
+| Sunday 22:11 | Model Review: the week's challenger vs. the live model, before anything is promoted | Claude scheduled task | the Models page (`outputs/models/index.html`), push |
+| Daily 23:30 (03:30 UTC) | Run the fixes the weekly checks queued | Railway `ops-fixes` (in `kalshi-worker`) | `ops.fix_requests` outcomes |
+| Sunday 22:41 | Librarian: keep the repo, outputs and Neon tidy | Claude scheduled task, runs `python -m rmm librarian --apply` | `outputs/weekly/YYYY-Www_librarian-log.md`, push |
 | 1st Monday | Research: diagnose misses, test ideas, open one PR | Claude scheduled task | `outputs/experiments/EXP-NNNN_<slug>/report.md` *(phase 4)* |
 
 The scheduled tasks run on the Claude subscription. No API key is used anywhere.
@@ -26,10 +28,19 @@ The scheduled tasks run on the Claude subscription. No API key is used anywhere.
 ```
 rmm/                 Python package (python -m rmm <command>)
   paths.py           the output naming convention; nothing else builds output paths
+  db.py              Neon access (psycopg, or SQL over HTTPS from cloud sessions)
   trade_sheet.py     daily trade sheet: classify, check, render md / csv / html
   cost_report.py     weekly Neon cost breakdown and rule-based suggestions
-  db.py              read-only Neon access
+  refit.py           Python port of refit_models.R (rrng.py: R's random numbers, for parity)
+  review.py          is a new model version better than the live one
+  horizons.py        model vs. market from 30 days out to call start
+  variables.py       what every model variable means
+  models_page.py     the Models page
+  weekly.py          weekly health checks, live grading, calibration, the fix queue
+  weekly_review.py   the Weekly Review page
+  librarian.py       naming, archive, docs and leftover-table checks
 sql/queries/         the read-only queries the code and the scheduled tasks run
+sql/migrations/      numbered schema changes (applied by hand, in order)
 agents/<task>/       one folder per scheduled task: its prompt and its permissions
 outputs/             everything the system produces, dated, committed
   trade-sheets/YYYY-MM/
@@ -39,13 +50,7 @@ outputs/             everything the system produces, dated, committed
   costs/neon-usage.csv   Neon usage ledger, one row per cost report
   archive/           outputs older than 90 days (moved by the Librarian)
 docs/decisions/      one dated note per decision
-tests/               DATABASE_URL=... NEON_API_KEY=... python -m rmm cost-report   # weekly cost report
-
-python -m rmm refit [--save]          # Python port of refit_models.R; --save stores a challenger (rmm_rw)
-python -m rmm models                  # model versions; promote with: select kalshi.promote_model(N);
-python -m rmm weekly [--save]         # health checks, live grading, calibration
-
-python -m unittest discover tests
+tests/               python -m unittest discover tests
 ```
 
 ## Naming rules
@@ -58,13 +63,21 @@ python -m unittest discover tests
 
 ## Commands
 
+All of them read `DATABASE_URL` (`rmm_ro` reads; `--save` needs `rmm_rw`).
+
 ```
 pip install -r requirements.txt
-DATABASE_URL=... python -m rmm trade-sheet          # query Neon and write today's sheet
-
-# without DATABASE_URL: run sql/queries/trade_sheet.sql and trade_sheet_preflight.sql
-# elsewhere (e.g. the Neon connector), save the results as JSON, then
+python -m rmm trade-sheet             # today's sheet
 python -m rmm trade-sheet --board board.json --preflight preflight.json
+                                      # render from saved results of sql/queries/trade_sheet*.sql
+python -m rmm cost-report             # weekly cost report
+python -m rmm refit [--save]          # Python port of refit_models.R; --save stores a challenger
+python -m rmm review [--save]         # newest challenger vs. the live model
+python -m rmm models [--page]         # model versions; --page writes the Models page
+                                      # promote with: select kalshi.promote_model(N);  (owner only)
+python -m rmm weekly [--save]         # health checks, live grading, calibration; --save queues fixes
+python -m rmm weekly-review [--page]  # the Weekly Review page
+python -m rmm librarian [--apply]     # tidy check; --apply moves files and writes the log
 
 python -m unittest discover tests
 ```
