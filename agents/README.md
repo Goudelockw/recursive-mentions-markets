@@ -6,6 +6,7 @@ All tasks run on the Claude subscription as fresh cloud sessions.
 | Task | When (ET) | Status |
 |---|---|---|
 | [`trade-sheet/`](trade-sheet/PROMPT.md) | Weekdays 06:41 | Phase 1 |
+| [`cost-report/`](cost-report/PROMPT.md) | Sunday 20:41 | Live |
 | `ops/` | Sunday 21:41 | Phase 3 |
 | `librarian/` | Sunday 22:41 | Phase 3 |
 | `research/` | 1st Monday 05:41 | Phase 4 |

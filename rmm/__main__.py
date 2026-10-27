@@ -7,7 +7,13 @@
   python -m rmm trade-sheet ... --date YYYY-MM-DD --now "YYYY-MM-DD HH:MM"
                                                  override the sheet date / generated time (tests)
 
-Writes outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html} and prints the
+  python -m rmm cost-report                      weekly cost breakdown: job runs and table sizes from
+                                                 Neon (DATABASE_URL), billed usage from the Neon API
+                                                 (NEON_API_KEY, optional); writes
+                                                 outputs/weekly/YYYY-Www_cost-report.md and appends
+                                                 outputs/costs/neon-usage.csv
+
+trade-sheet writes outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html} and prints the
 status line, so a scheduled task can pass it straight to the notification.
 """
 from __future__ import annotations
@@ -17,7 +23,7 @@ from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from . import db, paths, trade_sheet
+from . import cost_report, db, paths, trade_sheet
 
 ET = ZoneInfo("America/New_York")
 
@@ -40,6 +46,29 @@ def cmd_trade_sheet(a: argparse.Namespace) -> None:
     print(f"{sheet.status} · {sheet.headline}")
 
 
+def cmd_cost_report(a: argparse.Namespace) -> None:
+    if a.runs:
+        runs, rels = db.load_rows(Path(a.runs)), db.load_rows(Path(a.relations))
+    else:
+        runs = db.run_query(paths.query("cost_job_runs"))
+        rels = db.run_query(paths.query("cost_relations"))
+    now = cost_report.utcnow()
+    usage = None if a.no_api else cost_report.neon_usage(now)
+    ledger_path = paths.costs_ledger()
+    report = cost_report.build(runs, rels, usage, cost_report.read_ledger(ledger_path), now)
+    out = paths.weekly(now.date(), "cost-report")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(cost_report.render_md(report))
+    print(f"wrote {out.relative_to(paths.ROOT)}")
+    if usage:
+        cost_report.append_ledger(ledger_path, usage)
+        print(f"appended {ledger_path.relative_to(paths.ROOT)}")
+    week = report.week
+    head = (f"${week['compute_usd']:.2f} compute this week, awake {week['awake_pct']:.0f}%" if week
+            else f"job runs keep Neon awake ~{report.awake_hours:.0f}h/week")
+    print(f"{head} · {len(report.suggestions)} suggestions")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="rmm")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -49,6 +78,11 @@ def main() -> None:
     ts.add_argument("--date", help="sheet date, default today in New York")
     ts.add_argument("--now", help="generated-at time in New York, default now")
     ts.set_defaults(fn=cmd_trade_sheet)
+    cr = sub.add_parser("cost-report", help="weekly Neon cost breakdown and suggestions")
+    cr.add_argument("--runs", help="saved cost_job_runs.sql results (JSON)")
+    cr.add_argument("--relations", help="saved cost_relations.sql results (JSON)")
+    cr.add_argument("--no-api", action="store_true", help="skip the Neon API even if NEON_API_KEY is set")
+    cr.set_defaults(fn=cmd_cost_report)
     a = ap.parse_args()
     a.fn(a)
 

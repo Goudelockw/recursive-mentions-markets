@@ -13,6 +13,7 @@ How the whole system works today is in [`SYSTEM.md`](SYSTEM.md). Why things chan
 | When | What | Who | Output |
 |---|---|---|---|
 | Weekdays 06:41 | Trade Sheet | Claude scheduled task, runs `python -m rmm trade-sheet` | `outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`, the pinned Trade Sheet page, push + email |
+| Sunday 20:41 | Cost Report: what Neon costs, which jobs drive it, what to change | Claude scheduled task, runs `python -m rmm cost-report` | `outputs/weekly/YYYY-Www_cost-report.md`, `outputs/costs/neon-usage.csv`, push |
 | Sunday 21:00 | Weekly checks, grading, refit (challenger only) | Python on Railway | `ops.*` tables *(phase 2)* |
 | Sunday 21:41 | Ops: fix data gaps, write the Weekly Review | Claude scheduled task | `outputs/weekly/YYYY-Www_weekly-review.md` *(phase 3)* |
 | Sunday 22:41 | Librarian: keep the repo, outputs and Neon tidy | Claude scheduled task | `outputs/weekly/YYYY-Www_librarian-log.md` *(phase 3)* |
@@ -26,6 +27,7 @@ The scheduled tasks run on the Claude subscription. No API key is used anywhere.
 rmm/                 Python package (python -m rmm <command>)
   paths.py           the output naming convention; nothing else builds output paths
   trade_sheet.py     daily trade sheet: classify, check, render md / csv / html
+  cost_report.py     weekly Neon cost breakdown and rule-based suggestions
   db.py              read-only Neon access
 sql/queries/         the read-only queries the code and the scheduled tasks run
 agents/<task>/       one folder per scheduled task: its prompt and its permissions
@@ -34,9 +36,12 @@ outputs/             everything the system produces, dated, committed
   weekly/
   models/vN_YYYY-MM-DD/
   experiments/EXP-NNNN_<slug>/
+  costs/neon-usage.csv   Neon usage ledger, one row per cost report
   archive/           outputs older than 90 days (moved by the Librarian)
 docs/decisions/      one dated note per decision
-tests/               python -m unittest discover tests
+tests/               DATABASE_URL=... NEON_API_KEY=... python -m rmm cost-report   # weekly cost report
+
+python -m unittest discover tests
 ```
 
 ## Naming rules

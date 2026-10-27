@@ -59,7 +59,7 @@ def load_rows(path: Path) -> list[dict]:
     return [_plain(r) for r in data]
 
 
-INT_COLS = {"avoid_points", "no_hist", "markets_on_call", "max_hours"}
+INT_COLS = {"avoid_points", "no_hist", "markets_on_call", "max_hours", "bytes", "reads", "live_rows"}
 FLOAT_COLS = {"hours_since_ok"}
 
 

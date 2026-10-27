@@ -7,6 +7,7 @@ so the Librarian can check the outputs/ tree against these same functions.
     outputs/weekly/2026-W44_weekly-review.md                    weekly
     outputs/models/v8_2026-11-01/fit-report.md                  per fit
     outputs/experiments/EXP-0007_news-volume/report.md          per experiment
+    outputs/costs/neon-usage.csv                                 ledger, appended weekly
 """
 from __future__ import annotations
 
@@ -30,6 +31,11 @@ def trade_sheet(day: date, ext: str) -> Path:
 def weekly(day: date, kind: str, ext: str = "md") -> Path:
     year, week, _ = day.isocalendar()
     return OUTPUTS / "weekly" / f"{year}-W{week:02d}_{kind}.{ext}"
+
+
+def costs_ledger() -> Path:
+    """Running ledger of Neon usage, one row per cost report (not dated: it is appended to)."""
+    return OUTPUTS / "costs" / "neon-usage.csv"
 
 
 def query(name: str) -> Path:
