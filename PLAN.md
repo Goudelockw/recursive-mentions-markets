@@ -10,7 +10,7 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 
 - [ ] **Verify the first scheduled Trade Sheet** (Tue Oct 27, 06:41 ET): notification arrives, sheet committed under `outputs/trade-sheets/`, page updated.
 - [ ] **Verify the first mentions-only sync** (03:00 UTC Oct 27). A check is scheduled for 03:20 UTC.
-- [ ] **Delete two Railway services** in project `kalshi-data` → `production`: `kalshi-worker` and `backfill` (both already disabled). *Owner: you. Railway's delete confirmation doesn't reach you through Claude.*
+- [x] Railway services `kalshi-worker` (snapshot) and `backfill` deleted (Oct 27). Remaining: `sync`, `reconcile`, `filings`, `transcripts`, `news`
 - [x] `refit_models.R` and `mentions_model.R` shared (Oct 27)
 
 ## Phase 1 · Repo and the daily Trade Sheet

@@ -244,8 +244,6 @@ from kalshi.ingest_runs where started_at > now() - interval '24 hours' group by 
 | **filings** | Every 30 min, 10:00–22:59, weekdays | SEC EDGAR: new 8-K earnings releases (Item 2.02 / Exhibit 99.1) and foreign 6-K results for every mentions company, split into body vs. forward-looking boilerplate. Also corporate-event 8-Ks (deals, exec changes) and SIC codes. Ends with the refresh chain. **This is what switches the board to Entry 2** |
 | **transcripts** | Daily 05:00 | Finds and parses new Motley Fool transcripts (monthly sitemaps; 36 months for new companies). Then runs **fortune** (Fortune/Quartr pages, second source) and **equibles** (Equibles API, only for calls nothing else has; at most 90 requests per run). Ends with the refresh chain |
 | **news** | Daily 11:30 | Google News counts (Serper) for "company + word" over the 14 days before each call in the next 3 days. Every article's publish date is checked on its page (`news-dates`), so nothing after the cutoff counts. **Not used by the model** (Serper can't backfill history) |
-| **kalshi-worker** | Disabled Oct 27 | Was the 5-minute order-book snapshot for the watchlist (Atlanta temperature). Start command is a no-op; delete the service |
-| **backfill** | Disabled Oct 27 | Finished Sep 29. Start command is a no-op; delete the service |
 
 On-demand commands (Railway shell, `nohup python -m kalshi_worker <cmd> > /tmp/x.log 2>&1 &`):
 - `sweep`
