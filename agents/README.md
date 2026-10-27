@@ -8,7 +8,7 @@ All tasks run on the Claude subscription as fresh cloud sessions.
 | [`trade-sheet/`](trade-sheet/PROMPT.md) | Weekdays 06:41 | Phase 1 |
 | [`cost-report/`](cost-report/PROMPT.md) | Sunday 20:41 | Live |
 | [`model-review/`](model-review/PROMPT.md) | Sunday 22:11 (after the Railway refit) | Live |
-| `ops/` | Sunday 21:41 | Phase 3 |
+| [`ops/`](ops/PROMPT.md) | Sunday 21:41 (after the Railway batch) | Live |
 | `librarian/` | Sunday 22:41 | Phase 3 |
 | `research/` | 1st Monday 05:41 | Phase 4 |
 

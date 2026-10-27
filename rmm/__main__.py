@@ -24,7 +24,9 @@
                                                  is a version better than the live one? forward test and
                                                  walk-forward head-to-head, Brier and cents per trade
   python -m rmm weekly [--save] [--refit]        weekly health checks, live grading, calibration; --save
-                                                 writes ops.*, --refit stores a challenger (both rmm_rw)
+                                                 writes ops.* and queues allowed fixes, --refit stores a
+                                                 challenger (both rmm_rw)
+  python -m rmm weekly-review [--page]           the Weekly Review page (checks, fixes, proposals, results)
 
 trade-sheet writes outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html} and prints the
 status line, so a scheduled task can pass it straight to the notification.
@@ -147,8 +149,10 @@ def cmd_weekly(a: argparse.Namespace) -> None:
     from . import weekly
     checks, metrics = weekly.run_checks(), weekly.run_metrics()
     print(weekly.render(checks, metrics))
+    fixes = weekly.plan_fixes()
+    print(f"Fixes to queue ({len(fixes)}):" + "".join(f"\n  {f['command']} {' '.join(f['args'])}  ({f['check_name']})" for f in fixes))
     if a.save:
-        print(f"saved as ops run {weekly.save(checks, metrics)}")
+        print(f"saved as ops run {weekly.save(checks, metrics)}; queued {weekly.queue_fixes(fixes)} fixes")
     if a.refit:
         from . import refit
         r = refit.run(db.run_query(paths.query("model_training")))
@@ -161,6 +165,18 @@ def cmd_weekly(a: argparse.Namespace) -> None:
         print(review.summary(rv))
         cs = {s.stage: s for s in r.stages}["call_start"]
         print(f"saved challenger v{version}: call-start Brier {cs.brier_model:.4f} vs price {cs.brier_price:.4f}, k {cs.k_final:.3f}")
+
+
+def cmd_weekly_review(a: argparse.Namespace) -> None:
+    from . import weekly_review
+    r = weekly_review.load(cost_report.utcnow())
+    print(f"Week {r.week}: {weekly_review.headline(r)}")
+    if a.page:
+        md, page = paths.weekly(r.generated.date(), "weekly-review"), paths.weekly(r.generated.date(), "weekly-review", "html")
+        md.parent.mkdir(parents=True, exist_ok=True)
+        md.write_text(weekly_review.render_md(r))
+        page.write_text(weekly_review.render_html(r))
+        print(f"wrote {md.relative_to(paths.ROOT)} and {page.relative_to(paths.ROOT)}")
 
 
 def main() -> None:
@@ -192,6 +208,9 @@ def main() -> None:
     rv.add_argument("--against", type=int, help="version to compare with (default: the live one)")
     rv.add_argument("--save", action="store_true", help="store the review on the version (rmm_rw)")
     rv.set_defaults(fn=cmd_review)
+    wr = sub.add_parser("weekly-review", help="the Weekly Review: checks, fixes, what needs you, live results")
+    wr.add_argument("--page", action="store_true", help="write outputs/weekly/YYYY-Www_weekly-review.{md,html}")
+    wr.set_defaults(fn=cmd_weekly_review)
     md = sub.add_parser("models", help="list model versions and which one is live")
     md.add_argument("--page", action="store_true", help="also write outputs/models/index.html and README.md")
     md.set_defaults(fn=cmd_models)

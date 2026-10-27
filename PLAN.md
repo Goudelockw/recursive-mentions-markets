@@ -56,7 +56,9 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 
 ## Phase 3 · Sunday batch
 
-- [ ] Ops task: fixes data gaps (Auto / PR / Ask tiers), writes the Weekly Review
+- [x] `ops.fix_requests` + kalshi-worker `ops-fixes` (Railway, daily 03:30 UTC): the weekly batch queues safe re-fetches (transcript gaps, CHECK DATE filings, settlement sweep); `ops-fixes` runs only allowlisted commands and logs each outcome
+- [x] Ops task (Sundays 21:41 ET): investigates what needs judgment, drafts proposals with SQL and sources, code fixes on `ops/*` branches, publishes the Weekly Review; you approve with "approve W44-n"
+- [x] Weekly Review page (`python -m rmm weekly-review --page`)
 - [ ] Librarian task: naming, archive, stale Neon branches, SYSTEM.md upkeep
 - [ ] Daily labeling for markets listed mid-week (SYSTEM.md open item)
 - [ ] Release-window fix for wrong ticker dates (SYSTEM.md open item)

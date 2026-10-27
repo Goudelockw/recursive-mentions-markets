@@ -1,10 +1,13 @@
 """Weekly batch: health checks, live grading and calibration, saved to ops.* for the Sunday Ops task.
 
     python -m rmm weekly            print the checks and metrics (read-only, rmm_ro is enough)
-    python -m rmm weekly --save     also write them to ops.runs / ops.health_checks / ops.weekly_metrics (rmm_rw)
+    python -m rmm weekly --save     also write them to ops.runs / ops.health_checks / ops.weekly_metrics, and
+                                    queue the fixes it may make on its own in ops.fix_requests (rmm_rw)
 
 Every check is one read-only query plus a rule that turns its result into ok / warn / fail and a
-one-line detail naming what to look at. Fixing is the Ops task's job; this only reports.
+one-line detail naming what to look at. queue_fixes() turns some findings into safe, repeatable
+pipeline commands (FIX_RULES) that kalshi-worker's `ops-fixes` runs; everything that needs judgment
+is left to the Sunday Ops task.
 """
 from __future__ import annotations
 
@@ -201,3 +204,56 @@ def render(checks: list[Check], metrics: list[Metric]) -> str:
                      + (f", {pnl:+.1f}c/trade, {100 * (m['win_rate'].value or 0):.0f}% won" if pnl is not None else "")
                      + (f"; Brier {bm:.4f} vs market {bk:.4f} on {m['brier_model'].n} markets" if bm is not None else ""))
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- fixes the batch may queue on its own
+
+# (check, why, SQL returning one row per fix with columns command and args (text[])). Every rule must
+# map to a command on kalshi-worker's ops_fixes.ALLOWED list; anything else would be rejected there.
+FIX_RULES = [
+    ("transcript_gaps_30d", "No transcript for a call in the last 30 days: try Fortune for that company",
+     """select distinct 'fortune' as command, array['--symbol', symbol] as args
+        from kalshi.v_transcript_gaps where target_date >= current_date - 30"""),
+    ("transcript_gaps_30d", "Calls without a transcript: one Equibles pass",
+     """select 'equibles' as command, array[]::text[] as args
+        where exists (select 1 from kalshi.v_transcript_gaps where target_date >= current_date - 30)"""),
+    ("check_date_calls", "The estimated call time passed with no release found: re-fetch that company's filings",
+     """select distinct 'filings' as command, array['--backfill-symbol', symbol] as args
+        from kalshi.v_mentions_board where action = 'CHECK DATE'"""),
+    ("settlement_lag", "Markets closed 3+ days ago without a result: re-fetch them",
+     """select 'sweep' as command, array[]::text[] as args
+        where exists (select 1 from kalshi.markets where close_time < now() - interval '3 days'
+                      and status not in ('settled', 'finalized'))"""),
+]
+
+
+def plan_fixes() -> list[dict]:
+    """The fixes the rules ask for now, minus any queued or run in the last 7 days."""
+    recent = {(r["command"], tuple(r["args"] or [])) for r in db.query(
+        "select command, args from ops.fix_requests where created_at > now() - interval '7 days' and status <> 'rejected'")}
+    out, seen = [], set()
+    for check, why, sql in FIX_RULES:
+        for r in db.query(sql):
+            args = r["args"] if isinstance(r["args"], list) else _pg_array(r["args"])
+            key = (r["command"], tuple(args))
+            if key in recent or key in seen:
+                continue
+            seen.add(key)
+            out.append({"check_name": check, "command": r["command"], "args": args, "reason": why})
+    return out
+
+
+def _pg_array(v) -> list[str]:
+    """'{--symbol,VZ}' (how the HTTPS transport returns text[]) -> ['--symbol', 'VZ']."""
+    v = (v or "").strip("{}")
+    return [x.strip('"') for x in v.split(",")] if v else []
+
+
+def queue_fixes(fixes: list[dict]) -> int:
+    if not fixes:
+        return 0
+    db.transaction([("insert into ops.fix_requests (created_by, check_name, command, args, reason) "
+                     "select 'weekly', check_name, command, array(select jsonb_array_elements_text(args))::text[], reason "
+                     "from jsonb_to_recordset($1::jsonb) as x(check_name text, command text, args jsonb, reason text)",
+                     [json.dumps(fixes)])])
+    return len(fixes)
