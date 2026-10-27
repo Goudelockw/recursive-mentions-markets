@@ -24,11 +24,13 @@ task's own prompt only says to follow it.
      `sql/queries/trade_sheet_preflight.sql` into `/tmp/preflight.json`. Then
      `python -m rmm trade-sheet --board /tmp/board.json --preflight /tmp/preflight.json`.
      Never edit the saved results by hand.
-3. Commit the three files it wrote (`outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`)
-   with the message `trade sheet YYYY-MM-DD: <status line>` and push to `main`.
-4. Republish the Trade Sheet page: Artifact publish with `url` = the URL in `agents/trade-sheet/PAGE_URL`
-   and `file_path` = the `.html` file. If `PAGE_URL` is empty, publish a new page and write its URL there
-   in the same commit.
+3. Republish the Trade Sheet page first (the page is what the owner trades from): Artifact publish with
+   `url` = the URL in `agents/trade-sheet/PAGE_URL` and `file_path` = the `.html` file. If `PAGE_URL` is
+   empty, publish a new page and write its URL there in the same commit.
+4. Commit the three files it wrote (`outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`)
+   with the message `trade sheet YYYY-MM-DD: <status line>` and push to `main`. If the push is refused,
+   don't retry: the page is already up, so keep the sheet's status and add one line to the message,
+   `Not saved to GitHub: <error>`.
 5. End with this message and nothing else (it becomes the notification):
 
    ```
