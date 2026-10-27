@@ -15,7 +15,9 @@ task's own prompt only says to follow it.
 
 1. In the `recursive-mentions-markets` checkout, on `main`: `pip install -q -r requirements.txt`.
 2. Build the sheet.
-   - If `DATABASE_URL` is set: `python -m rmm trade-sheet`.
+   - If `DATABASE_URL` is set (the read-only `rmm_ro` role): `python -m rmm trade-sheet`. In a cloud
+     session it queries over Neon's HTTPS endpoint, so `*.neon.tech` must be an allowed domain.
+     If it fails with a network error, fall back to the next bullet.
    - Otherwise use the Neon connector (project `mute-sun-75653323`, database `neondb`). Run
      `sql/queries/trade_sheet.sql` wrapped as `select json_agg(t) from (<query without the final ;>) t`
      and save the result exactly as returned to `/tmp/board.json`. Do the same with
