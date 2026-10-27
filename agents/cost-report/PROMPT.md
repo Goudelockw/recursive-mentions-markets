@@ -7,7 +7,8 @@ subscription. Push notification on finish.
 
 - **Read only.** Never change Neon settings, Railway services, schedules or data. Every suggestion is
   for the owner to approve (or for the Ops / Librarian tasks to turn into a PR).
-- May commit only `outputs/weekly/YYYY-Www_cost-report.md` and `outputs/costs/neon-usage.csv`.
+- May commit only `outputs/weekly/YYYY-Www_cost-report.md`, `outputs/costs/neon-usage.csv` and
+  `outputs/models/index.html` / `outputs/models/README.md`.
 
 ## Steps
 
@@ -20,8 +21,11 @@ subscription. Push notification on finish.
    $0.106, or GB × $0.35). Say plainly when a saving can't be estimated from the report. Compare with
    last week's report in `outputs/weekly/` when there is one: say what changed and whether last
    week's recommendations were acted on.
-4. Commit the two files with the message `cost report YYYY-Www: <the command's last line>` and push to `main`.
-5. End with this message and nothing else (it becomes the notification):
+4. Refresh the Models page: `python -m rmm models --page`, then Artifact publish with `url` = the URL in
+   `agents/models/PAGE_URL` and `file_path` = `outputs/models/index.html`. If a challenger beats the live
+   model's call-start Brier by more than 0.002, add one line saying so to the end message (never promote).
+5. Commit the files with the message `cost report YYYY-Www: <the command's last line>` and push to `main`.
+6. End with this message and nothing else (it becomes the notification):
 
    ```
    <the command's last line>

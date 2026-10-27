@@ -10,7 +10,7 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 
 - [ ] **Verify the first scheduled Trade Sheet** (Tue Oct 27, 06:41 ET): notification arrives, sheet committed under `outputs/trade-sheets/`, page updated.
 - [x] First mentions-only sync verified (03:04 UTC Oct 27): about 2.5 min instead of about 9; refresh 85s instead of 205s
-- [ ] **Decide: promote challenger v2?** Same model as v1, refit on today's data through Oct 26. *Owner: you. Promotion is one command and can be rolled back.*
+- [x] v2 promoted to live (Oct 27, 03:25 UTC); v1 retired. Models page: `python -m rmm models --page`, refreshed Sundays by the Cost Report task
 - [ ] Verify the first `research-weekly` run (Mon Nov 2, 01:00 UTC)
 - [x] Railway services `kalshi-worker` (snapshot) and `backfill` deleted (Oct 27). Remaining: `sync`, `reconcile`, `filings`, `transcripts`, `news`
 - [x] `refit_models.R` and `mentions_model.R` shared (Oct 27)
@@ -46,6 +46,8 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] `ops` schema and `python -m rmm weekly`: job freshness, transcript gaps, settlement-vs-transcript audit, labels, CHECK DATE, call-time confidence, settlement lag, score logging, model age; live grading; calibration
 - [x] Railway service `research-weekly` (Mon 01:00 UTC): `weekly --save --refit`
 - [x] Retire R: `refit_models.R` kept only as the parity reference
+- [x] Models page (versions, backtest by month, calibration, coefficient changes)
+- [x] Fixed: live Brier and calibration graded on `result = 'YES'` (`won` in `v_mentions_history` means the trade won)
 
 ## Phase 3 · Sunday batch
 

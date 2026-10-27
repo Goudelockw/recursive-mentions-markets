@@ -18,7 +18,8 @@
                                                  and compares with the live model; --save stores it as a
                                                  challenger version (needs rmm_rw). Never changes the live
                                                  model: promotion is select kalshi.promote_model(N)
-  python -m rmm models                           list model versions and which one is live
+  python -m rmm models [--page]                  list model versions and which one is live; --page writes
+                                                 the Models page (outputs/models/index.html, README.md)
   python -m rmm weekly [--save] [--refit]        weekly health checks, live grading, calibration; --save
                                                  writes ops.*, --refit stores a challenger (both rmm_rw)
 
@@ -107,6 +108,13 @@ def cmd_refit(a: argparse.Namespace) -> None:
 
 
 def cmd_models(a: argparse.Namespace) -> None:
+    if a.page:
+        from . import models_page
+        d = models_page.load(cost_report.utcnow())
+        (paths.OUTPUTS / "models").mkdir(parents=True, exist_ok=True)
+        (paths.OUTPUTS / "models" / "index.html").write_text(models_page.render_html(d))
+        (paths.OUTPUTS / "models" / "README.md").write_text(models_page.render_md(d))
+        print("wrote outputs/models/index.html and outputs/models/README.md")
     rows = db.query("select version, status, trained_through::text, fitted_at::date::text as fitted, source, "
                     "metrics->'call_start'->>'brier_model' as brier, metrics->'call_start'->>'brier_price' as price, "
                     "metrics->'call_start'->>'k' as k from kalshi.model_versions order by version")
@@ -156,7 +164,9 @@ def main() -> None:
     wk.add_argument("--save", action="store_true", help="write them to ops.* (rmm_rw)")
     wk.add_argument("--refit", action="store_true", help="also refit and store a challenger version (rmm_rw)")
     wk.set_defaults(fn=cmd_weekly)
-    sub.add_parser("models", help="list model versions and which one is live").set_defaults(fn=cmd_models)
+    md = sub.add_parser("models", help="list model versions and which one is live")
+    md.add_argument("--page", action="store_true", help="also write outputs/models/index.html and README.md")
+    md.set_defaults(fn=cmd_models)
     a = ap.parse_args()
     a.fn(a)
 

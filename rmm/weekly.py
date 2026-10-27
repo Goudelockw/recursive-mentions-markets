@@ -140,15 +140,17 @@ def run_checks() -> list[Check]:
 
 
 def run_metrics() -> list[Metric]:
+    """Live results from v_mentions_history. Its `won` is whether the trade won (empty without a
+    trade); whether the word was said is `result` = 'YES', which Brier and calibration use."""
     out = []
     for days in (7, 30, 90):
         r = _one(f"""
             select count(*) filter (where action in ('TRADE', 'TRADE+')) as trades,
                    avg(pnl_c) filter (where action in ('TRADE', 'TRADE+')) as pnl_c,
                    avg((pnl_c > 0)::int) filter (where action in ('TRADE', 'TRADE+')) as win_rate,
-                   count(*) filter (where won is not null) as graded,
-                   avg(power(model_c / 100.0 - won, 2)) filter (where won is not null) as brier_model,
-                   avg(power((bid_c + ask_c) / 200.0 - won, 2)) filter (where won is not null) as brier_market
+                   count(*) filter (where result in ('YES', 'NO')) as graded,
+                   avg(power(model_c / 100.0 - (result = 'YES')::int, 2)) filter (where result in ('YES', 'NO')) as brier_model,
+                   avg(power((bid_c + ask_c) / 200.0 - (result = 'YES')::int, 2)) filter (where result in ('YES', 'NO')) as brier_market
             from kalshi.v_mentions_history where source = 'live' and call_date >= current_date - {days}""")
         seg = f"live_{days}d"
         trades, graded = _int(r.get("trades")), _int(r.get("graded"))
@@ -159,9 +161,9 @@ def run_metrics() -> list[Metric]:
             out.append(Metric(name, seg, float(v) if v is not None else None, n))
     for r in db.query("""
             select floor(least(model_c, 99.9) / 10) * 10 as bucket, count(*) as n,
-                   avg(model_c) / 100 as predicted, avg(won) as actual
+                   avg(model_c) / 100 as predicted, avg((result = 'YES')::int) as actual
             from kalshi.v_mentions_history
-            where source = 'live' and won is not null and call_date >= current_date - 90
+            where source = 'live' and result in ('YES', 'NO') and call_date >= current_date - 90
             group by 1 order by 1"""):
         b = int(float(r["bucket"]))
         out.append(Metric("calibration_predicted", f"{b}-{b + 10}c", float(r["predicted"]), _int(r["n"])))
