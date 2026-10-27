@@ -14,7 +14,7 @@ What is done and what is next is in [`PLAN.md`](PLAN.md). How the whole system w
 |---|---|---|---|
 | Weekdays 06:41 | Trade Sheet | Claude scheduled task, runs `python -m rmm trade-sheet` | `outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`, the pinned Trade Sheet page, push + email |
 | Sunday 20:41 | Cost Report: what Neon costs, which jobs drive it, what to change | Claude scheduled task, runs `python -m rmm cost-report` | `outputs/weekly/YYYY-Www_cost-report.md`, `outputs/costs/neon-usage.csv`, push |
-| Sunday 21:00 | Weekly checks, grading, refit (challenger only) | Python on Railway | `ops.*` tables *(phase 2)* |
+| Sunday ~21:00 (Mon 01:00 UTC) | Weekly checks, live grading, calibration, challenger refit | Railway `research-weekly`: `python -m rmm weekly --save --refit` | `ops.*` tables, a challenger in `kalshi.model_versions` |
 | Sunday 21:41 | Ops: fix data gaps, write the Weekly Review | Claude scheduled task | `outputs/weekly/YYYY-Www_weekly-review.md` *(phase 3)* |
 | Sunday 22:41 | Librarian: keep the repo, outputs and Neon tidy | Claude scheduled task | `outputs/weekly/YYYY-Www_librarian-log.md` *(phase 3)* |
 | 1st Monday | Research: diagnose misses, test ideas, open one PR | Claude scheduled task | `outputs/experiments/EXP-NNNN_<slug>/report.md` *(phase 4)* |
@@ -40,6 +40,10 @@ outputs/             everything the system produces, dated, committed
   archive/           outputs older than 90 days (moved by the Librarian)
 docs/decisions/      one dated note per decision
 tests/               DATABASE_URL=... NEON_API_KEY=... python -m rmm cost-report   # weekly cost report
+
+python -m rmm refit [--save]          # Python port of refit_models.R; --save stores a challenger (rmm_rw)
+python -m rmm models                  # model versions; promote with: select kalshi.promote_model(N);
+python -m rmm weekly [--save]         # health checks, live grading, calibration
 
 python -m unittest discover tests
 ```

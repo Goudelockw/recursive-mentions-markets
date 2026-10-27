@@ -4,12 +4,14 @@ The living checklist. Updated whenever something ships or the plan changes; the 
 changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 [`docs/blueprint.html`](docs/blueprint.html).
 
-*Last updated: 2026-10-27 (R port done).*
+*Last updated: 2026-10-27 (phase 2 built).*
 
 ## Now
 
 - [ ] **Verify the first scheduled Trade Sheet** (Tue Oct 27, 06:41 ET): notification arrives, sheet committed under `outputs/trade-sheets/`, page updated.
-- [ ] **Verify the first mentions-only sync** (03:00 UTC Oct 27). A check is scheduled for 03:20 UTC.
+- [x] First mentions-only sync verified (03:04 UTC Oct 27): about 2.5 min instead of about 9; refresh 85s instead of 205s
+- [ ] **Decide: promote challenger v2?** Same model as v1, refit on today's data through Oct 26. *Owner: you. Promotion is one command and can be rolled back.*
+- [ ] Verify the first `research-weekly` run (Mon Nov 2, 01:00 UTC)
 - [x] Railway services `kalshi-worker` (snapshot) and `backfill` deleted (Oct 27). Remaining: `sync`, `reconcile`, `filings`, `transcripts`, `news`
 - [x] `refit_models.R` and `mentions_model.R` shared (Oct 27)
 
@@ -29,7 +31,7 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] Non-mention data deleted: 34 GB → 2.3 GB
 - [x] Weekly Cost Report (`python -m rmm cost-report`), Sundays 20:41 ET
 - [ ] First cost report reviewed (Sun Nov 1)
-- [ ] Refresh chain: refresh the transcript and filing steps only when those change (~3.5 min a run today)
+- [x] Refresh chain: sync skips the 7 transcript-only steps (205s → 85s); filings refreshes only when it stored something new
 - [ ] Drop leftover objects (`mv_word_counts_old3/4/5`, `wc_snapshot_20260928`) once the cost report confirms nothing reads them
 
 ## Phase 2 · Python research service
@@ -38,11 +40,12 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] Parity: identical coefficients and all 9,130 backtest probabilities vs. `Rscript refit_models.R` on the same data; kept as a test
 - [x] First Python refit saved as challenger `v2` (through Oct 26), not promoted
 - [ ] Port the research parts of `mentions_model.R` (feature tests, scorecard, bankroll simulation) into the phase 4 scoring harness
-- [ ] `model_version` on `model_coefficients`; refits write challengers, never the live model
-- [ ] Live grading: log the board's scores when the Trade Sheet runs (replaces the planned 15-minute `score-log` cron; needs a role that may write `model_score_log` only)
-- [ ] `ops` schema and `research weekly`: health checks, grading, calibration, transcript-vs-settlement accuracy check
-- [ ] Railway service for `research` (Sunday batch)
-- [ ] Retire R
+- [x] Model versions: `kalshi.model_versions`, `kalshi.promote_model(N)` (owner only), frozen non-challengers; v1 = R fit (live), v2 = Python challenger
+- [x] Roles: `rmm_ro` reads; `rmm_rw` stores challengers and `ops` rows, can't touch the live model
+- [x] Live grading: `sync` and `filings` call `kalshi.log_model_scores()` after each refresh (the database is awake then anyway)
+- [x] `ops` schema and `python -m rmm weekly`: job freshness, transcript gaps, settlement-vs-transcript audit, labels, CHECK DATE, call-time confidence, settlement lag, score logging, model age; live grading; calibration
+- [x] Railway service `research-weekly` (Mon 01:00 UTC): `weekly --save --refit`
+- [x] Retire R: `refit_models.R` kept only as the parity reference
 
 ## Phase 3 · Sunday batch
 

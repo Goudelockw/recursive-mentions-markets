@@ -239,11 +239,12 @@ from kalshi.ingest_runs where started_at > now() - interval '24 hours' group by 
 
 | Service | Schedule (UTC) | What it does |
 |---|---|---|
-| **sync** | Hourly (`0 * * * *`) | Pulls open events and markets for the 178 earnings-mention series only (new ones picked up from `/series`), with current quotes. `sync --full` covers the whole exchange. Hourly candles; for mentions markets with a call in the next 2 days, the last 3h of hourly candles. Watchlist trades and 1-minute candles. Then a "stale sweep" re-fetches markets that dropped out of the open list, and the refresh chain runs (4.2) |
+| **sync** | Hourly (`0 * * * *`) | Pulls open events and markets for the 178 earnings-mention series only (new ones picked up from `/series`), with current quotes. `sync --full` covers the whole exchange. Refreshes only the price-dependent views (the transcript-only steps run with `transcripts`), then logs scores with `kalshi.log_model_scores()` for live grading. Hourly candles; for mentions markets with a call in the next 2 days, the last 3h of hourly candles. Watchlist trades and 1-minute candles. Then a "stale sweep" re-fetches markets that dropped out of the open list, and the refresh chain runs (4.2) |
 | **reconcile** | Daily 04:15 | Locks in results and daily candles for earnings-mention markets settled in the last 3 days (`RECONCILE_ALL=1` for every series). Runs `precall` (hourly prices from 48h before to 3h after each settled mentions call), then a stale sweep |
 | **filings** | Every 30 min, 10:00–22:59, weekdays | SEC EDGAR: new 8-K earnings releases (Item 2.02 / Exhibit 99.1) and foreign 6-K results for every mentions company, split into body vs. forward-looking boilerplate. Also corporate-event 8-Ks (deals, exec changes) and SIC codes. Ends with the refresh chain. **This is what switches the board to Entry 2** |
 | **transcripts** | Daily 05:00 | Finds and parses new Motley Fool transcripts (monthly sitemaps; 36 months for new companies). Then runs **fortune** (Fortune/Quartr pages, second source) and **equibles** (Equibles API, only for calls nothing else has; at most 90 requests per run). Ends with the refresh chain |
 | **news** | Daily 11:30 | Google News counts (Serper) for "company + word" over the 14 days before each call in the next 3 days. Every article's publish date is checked on its page (`news-dates`), so nothing after the cutoff counts. **Not used by the model** (Serper can't backfill history) |
+| **research-weekly** | Mondays 01:00 UTC (Sun 9pm EDT / 8pm EST) | `python -m rmm weekly --save --refit` from `recursive-mentions-markets`: health checks, live grading and calibration into `ops.*`, plus a challenger refit. Role `rmm_rw`. Rebuilds only on code changes |
 
 On-demand commands (Railway shell, `nohup python -m kalshi_worker <cmd> > /tmp/x.log 2>&1 &`):
 - `sweep`
@@ -281,22 +282,28 @@ The first source that applies wins:
 
 ---
 
-## 5. Refitting the models
-Refit after each earnings season, or after a big data change (e.g. a transcript backfill):
+## 5. Refitting the models (Python, versioned, since Oct 27)
+A refit runs every Sunday on Railway (`research-weekly`) and is stored as a **challenger**. It never
+changes what the board trades on. Every fit is kept in `kalshi.model_versions`; exactly one is live.
 
 ```
-DATABASE_URL=... Rscript refit_models.R
+python -m rmm refit                 # fit + walk-forward backtest; writes outputs/models/vN_<date>/
+python -m rmm refit --save          # ...and stores it as challenger vN (role rmm_rw)
+python -m rmm models                # list versions and which one is live
+select kalshi.promote_model(N);     # make vN live (database owner only); promote the old one to roll back
 ```
 
-**What it does:**
+**What a refit does** (`rmm/refit.py`, an exact port of `refit_models.R`, checked by `tests/test_refit_parity.py`):
 1. Reads `v_model_training`.
 2. Re-runs the walk-forward backtest for both entry points.
 3. Re-learns k.
-4. Rewrites `model_coefficients` and `model_backtest` in one transaction.
+4. Saves coefficients, backtest and a fit report; with `--save`, stores them as version N.
 
-The board picks up the new coefficients right away.
+`kalshi.promote_model(N)` rewrites `model_coefficients` and `model_backtest` from version N in one
+transaction, so the board picks it up right away. Roles: `rmm_ro` reads (Trade Sheet, Cost Report),
+`rmm_rw` stores challengers and `ops.*` rows (`research-weekly`), the owner promotes.
 
-`mentions_model.R` is the full research script, with charts and resampling tests.
+`mentions_model.R` is the full research script, with charts and resampling tests. Its feature tests and scorecards move into the phase 4 research harness; `refit_models.R` is retired (kept only as the parity reference).
 
 ---
 
@@ -317,8 +324,8 @@ The board picks up the new coefficients right away.
 
 | Item | Status |
 |---|---|
-| **First full refit run** (`refit_models.R`) | Not run. `model_backtest` still holds only a 305-row sample, so history panels are thin. Coefficients are trained through Oct 9 |
-| **`score-log` cron** (runs `kalshi.log_model_scores()` every 15 min) | Not set up; the last log was Oct 13. Live trades aren't being graded automatically until it exists (worker PR prompt: `claude_code_prompt_model_board.md`) |
+| **First full refit run** | Done Oct 27 in Python: challenger v2 (through Oct 26, 9,924 backtest rows). v1 (the Oct 13 R fit) is still live until promoted |
+| **`score-log` cron** | Done Oct 27, differently: `sync` and `filings` call `kalshi.log_model_scores()` after each refresh |
 | **Refresh release features when an 8-K lands** | In the same PR. Until then, release features for the call-start model refresh on the next refresh chain |
 | **Grafana board** | 12 panel queries in `grafana_mentions_board.sql`; set up the panels |
 | **Daily labeling for markets listed mid-week** | Weekly labeling misses markets with a call in under 3 days |
