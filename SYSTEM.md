@@ -1,6 +1,6 @@
 # Kalshi Mentions System: How It Works
 
-*As of October 26, 2026. Owner: William.*
+*As of October 26, 2026, with the Oct 27 pipeline changes in section 4.1 (see `docs/decisions/2026-10-27_mentions-only-data.md`). Owner: William. The database now holds only earnings-mention markets.*
 
 ---
 
@@ -239,13 +239,13 @@ from kalshi.ingest_runs where started_at > now() - interval '24 hours' group by 
 
 | Service | Schedule (UTC) | What it does |
 |---|---|---|
-| **sync** | Hourly (`0 * * * *`) | Pulls every open event and market from Kalshi, with current quotes. Hourly candles; for mentions markets with a call in the next 2 days, the last 3h of hourly candles. Watchlist trades and 1-minute candles. Then a "stale sweep" re-fetches markets that dropped out of the open list, and the refresh chain runs (4.2) |
-| **reconcile** | Daily 04:15 | Locks in results and daily candles for markets settled in the last 3 days. Runs `precall` (hourly prices from 48h before to 3h after each settled mentions call), then a stale sweep |
+| **sync** | Hourly (`0 * * * *`) | Pulls open events and markets for the 178 earnings-mention series only (new ones picked up from `/series`), with current quotes. `sync --full` covers the whole exchange. Hourly candles; for mentions markets with a call in the next 2 days, the last 3h of hourly candles. Watchlist trades and 1-minute candles. Then a "stale sweep" re-fetches markets that dropped out of the open list, and the refresh chain runs (4.2) |
+| **reconcile** | Daily 04:15 | Locks in results and daily candles for earnings-mention markets settled in the last 3 days (`RECONCILE_ALL=1` for every series). Runs `precall` (hourly prices from 48h before to 3h after each settled mentions call), then a stale sweep |
 | **filings** | Every 30 min, 10:00–22:59, weekdays | SEC EDGAR: new 8-K earnings releases (Item 2.02 / Exhibit 99.1) and foreign 6-K results for every mentions company, split into body vs. forward-looking boilerplate. Also corporate-event 8-Ks (deals, exec changes) and SIC codes. Ends with the refresh chain. **This is what switches the board to Entry 2** |
 | **transcripts** | Daily 05:00 | Finds and parses new Motley Fool transcripts (monthly sitemaps; 36 months for new companies). Then runs **fortune** (Fortune/Quartr pages, second source) and **equibles** (Equibles API, only for calls nothing else has; at most 90 requests per run). Ends with the refresh chain |
 | **news** | Daily 11:30 | Google News counts (Serper) for "company + word" over the 14 days before each call in the next 3 days. Every article's publish date is checked on its page (`news-dates`), so nothing after the cutoff counts. **Not used by the model** (Serper can't backfill history) |
-| **kalshi-worker** | Always on | Order-book snapshot every 5 minutes for watchlist series |
-| **backfill** | One-off (restart on failure) | Daily candles for every settled market, newest first, resumable. Can be deleted once complete |
+| **kalshi-worker** | Disabled Oct 27 | Was the 5-minute order-book snapshot for the watchlist (Atlanta temperature). Start command is a no-op; delete the service |
+| **backfill** | Disabled Oct 27 | Finished Sep 29. Start command is a no-op; delete the service |
 
 On-demand commands (Railway shell, `nohup python -m kalshi_worker <cmd> > /tmp/x.log 2>&1 &`):
 - `sweep`

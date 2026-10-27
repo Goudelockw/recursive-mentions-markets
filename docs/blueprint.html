@@ -140,7 +140,7 @@ tr:last-child td{border-bottom:0}
 <div class="wrap">
 
   <header style="display:flex;flex-direction:column;gap:14px">
-    <div class="eyebrow">recursive-mentions-markets · plan v3 · Oct 27, 2026</div>
+    <div class="eyebrow">recursive-mentions-markets · plan v4 · Oct 27, 2026 · checklist in PLAN.md</div>
     <h1>Trades every morning. Everything else once a week.</h1>
     <p class="lede">With about a dozen markets settling each week, a daily evaluation would mostly repeat itself and keep the database awake. So the daily work is one short read of the board, turned into a trade sheet. Health checks, grading, fixes, research and cleanup all run as one batch on Sunday night.</p>
     <div class="legend">
@@ -442,11 +442,12 @@ tr:last-child td{border-bottom:0}
         </ul>
       </div>
       <div class="card">
-        <h3>The bigger lever is the existing pipeline</h3>
+        <h3>Done Oct 27: the pipeline</h3>
         <ul>
-          <li>The hourly <code>sync</code> rebuilds all 18 materialized views every time, which probably keeps the database awake most of the day.</li>
-          <li><b>Option:</b> run the refresh chain only when new data arrived, or a few times a day. Keep hourly price pulls only for markets with a call in the next 48h.</li>
-          <li>The first Sunday batch will measure how much time each job keeps the database awake. Decide after seeing the numbers.</li>
+          <li>Neon had been awake since Sep 20: about 748 CU-hours (~$79) in 26 days, plus 34 GB stored.</li>
+          <li>Causes: a 5-minute Atlanta-weather snapshot, an hourly pull of all of Kalshi, and a 2.9-hour nightly reconcile over ~294,000 markets.</li>
+          <li><b>Fixed:</b> mentions-only sync and reconcile, snapshot off, non-mention data deleted (34 GB → 2.3 GB).</li>
+          <li><b>Next:</b> the 18-step refresh chain still runs after every sync and filings run. The Sunday cost report will measure it.</li>
         </ul>
       </div>
     </div>
@@ -463,11 +464,21 @@ tr:last-child td{border-bottom:0}
         <ul><li>Folder layout, naming rules, README and SYSTEM.md <b>(built)</b></li>
         <li><code>python -m rmm trade-sheet</code>: markdown, CSV and page, with per-market data checks <b>(built)</b></li>
         <li><a href="https://claude.ai/artifact/CUHMtiKobQ1TWTjXLiYvoa">Trade Sheet page</a> live with the Oct 27 board <b>(built)</b></li>
-        <li>Weekday 06:41 scheduled task <b>(next)</b></li></ul>
+        <li>Read-only database role, <code>main</code> branch, Neon over HTTPS <b>(built)</b></li>
+        <li>Weekday 06:41 scheduled task <b>(scheduled; first run Tue Oct 27)</b></li></ul>
         <p class="done"><b>Done when:</b> a trade sheet arrives every weekday morning.</p></div></li>
+      <li class="phase"><span class="n">✓</span><div class="body">
+        <div class="row"><h3>Cost and data cleanup (added Oct 27)</h3><span class="chip c-py"><i></i>Python</span><span class="chip c-cl"><i></i>Claude</span></div>
+        <ul><li>Sync and reconcile limited to earnings mentions <b>(built)</b></li>
+        <li>5-minute Atlanta snapshot and finished backfill disabled <b>(built)</b></li>
+        <li>Non-mention data deleted, 34 GB → 2.3 GB <b>(built)</b></li>
+        <li>Weekly Cost Report, Sundays 20:41 <b>(scheduled; first run Nov 1)</b></li>
+        <li>Refresh chain only when transcripts or filings change <b>(next)</b></li></ul>
+        <p class="done"><b>Done when:</b> the database suspends between jobs and the cost report confirms it.</p></div></li>
       <li class="phase"><span class="n">2</span><div class="body">
         <div class="row"><h3>Python research service</h3><span class="chip c-py"><i></i>Python</span></div>
-        <ul><li>Port <code>refit_models.R</code> and pass the parity test against current coefficients</li>
+        <ul><li>Port <code>refit_models.R</code> and pass the parity test against current coefficients <b>(waiting on the R scripts)</b></li>
+        <li>Live grading: log the board's scores when the Trade Sheet runs</li>
         <li><code>research weekly</code> checks and grading, <code>ops</code> schema, model versions</li></ul>
         <p class="done"><b>Done when:</b> R is retired and a refit runs on Railway.</p></div></li>
       <li class="phase"><span class="n">3</span><div class="body">

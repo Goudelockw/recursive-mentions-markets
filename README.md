@@ -5,7 +5,7 @@ The decision and research layer on top of [`kalshi-worker`](https://github.com/G
 trade sheet, checks the pipeline and the model's inputs every week, and runs the research loop
 that proposes, tests and promotes model changes.
 
-How the whole system works today is in [`SYSTEM.md`](SYSTEM.md). Why things changed is in
+What is done and what is next is in [`PLAN.md`](PLAN.md). How the whole system works today is in [`SYSTEM.md`](SYSTEM.md). Why things changed is in
 [`docs/decisions/`](docs/decisions/).
 
 ## What runs when (Eastern time)
