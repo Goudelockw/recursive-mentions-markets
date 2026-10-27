@@ -69,6 +69,9 @@ def prepare(rows: list[dict] | pd.DataFrame) -> pd.DataFrame:
 class Fit:
     terms: list[str]
     params: pd.Series   # "(Intercept)" first, then terms
+    se: pd.Series | None = None
+    p_value: pd.Series | None = None
+    sd: pd.Series | None = None    # each term's standard deviation in the rows it was fitted on
 
     def predict(self, x: pd.DataFrame) -> np.ndarray:
         """P(YES); NaN where a term is missing, like predict.glm on new data."""
@@ -84,7 +87,9 @@ def fit(terms: list[str], x: pd.DataFrame) -> Fit:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         res = sm.GLM(m["won"].to_numpy(float), X, family=sm.families.Binomial()).fit()
-    return Fit(terms, pd.Series(res.params, index=["(Intercept)"] + terms))
+    idx = ["(Intercept)"] + terms
+    return Fit(terms, pd.Series(res.params, index=idx), pd.Series(res.bse, index=idx),
+               pd.Series(res.pvalues, index=idx), pd.Series([np.nan] + list(m[terms].std(ddof=1)), index=idx))
 
 
 def oof(terms: list[str], x: pd.DataFrame, k: int = 5) -> np.ndarray:
@@ -161,7 +166,8 @@ def final_fit(d: pd.DataFrame, k: dict[str, float]) -> pd.DataFrame:
     out = []
 
     def add(model: str, f: Fit) -> None:
-        out.extend({"model": model, "term": t, "coef": float(np.format_float_positional(v, 8, fractional=False))}
+        out.extend({"model": model, "term": t, "coef": float(np.format_float_positional(v, 8, fractional=False)),
+                    "se": float(f.se[t]), "p_value": float(f.p_value[t]), "sd": float(f.sd[t])}
                    for t, v in f.params.items())
 
     add("fundamental", fit(F_FULL, d))
@@ -254,14 +260,16 @@ def save(r: Refit, version: int, notes: str = "") -> None:
     import json
 
     from . import db
-    co = r.coefficients[r.coefficients["term"] != "calibration_k"][["model", "term", "coef"]]
-    k = r.coefficients[r.coefficients["term"] == "calibration_k"][["model", "term", "coef"]]
+    cols = ["model", "term", "coef", "se", "p_value", "sd"]
+    co = r.coefficients[r.coefficients["term"] != "calibration_k"][cols]
+    k = r.coefficients[r.coefficients["term"] == "calibration_k"][cols]
     db.transaction([
         ("insert into kalshi.model_versions (version, status, trained_through, fitted_at, source, metrics, notes) "
          "values ($1, 'challenger', $2::date, now(), 'rmm refit', $3::jsonb, $4)",
          [version, r.trained_through, json.dumps(metrics(r)), notes or None]),
-        ("insert into kalshi.model_version_coefficients (version, model, term, coef) "
-         "select $1, model, term, coef from jsonb_to_recordset($2::jsonb) as x(model text, term text, coef numeric)",
+        ("insert into kalshi.model_version_coefficients (version, model, term, coef, se, p_value, sd) "
+         "select $1, model, term, coef, se, p_value, sd from jsonb_to_recordset($2::jsonb) "
+         "as x(model text, term text, coef numeric, se numeric, p_value numeric, sd numeric)",
          [version, pd.concat([co, k]).to_json(orient="records")]),
         ("insert into kalshi.model_version_backtest (version, ticker, stage, p_model) "
          "select $1, ticker, stage, p_model from jsonb_to_recordset($2::jsonb) as x(ticker text, stage text, p_model numeric)",

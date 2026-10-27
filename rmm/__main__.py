@@ -20,6 +20,9 @@
                                                  model: promotion is select kalshi.promote_model(N)
   python -m rmm models [--page]                  list model versions and which one is live; --page writes
                                                  the Models page (outputs/models/index.html, README.md)
+  python -m rmm review [--version N] [--against M] [--save]
+                                                 is a version better than the live one? forward test and
+                                                 walk-forward head-to-head, Brier and cents per trade
   python -m rmm weekly [--save] [--refit]        weekly health checks, live grading, calibration; --save
                                                  writes ops.*, --refit stores a challenger (both rmm_rw)
 
@@ -125,6 +128,21 @@ def cmd_models(a: argparse.Namespace) -> None:
     print("Promote with: select kalshi.promote_model(N);  (database owner only)")
 
 
+def cmd_review(a: argparse.Namespace) -> None:
+    from . import review
+    vs = review.versions()
+    live = next(x["version"] for x in vs if x["status"] == "live")
+    new = a.version or max((x["version"] for x in vs if x["status"] == "challenger"), default=None)
+    if new is None:
+        raise SystemExit("no challenger to review; pass --version")
+    old = a.against or (live if new != live else max(x["version"] for x in vs if x["version"] < new))
+    r = review.compare(new, old)
+    print(review.summary(r))
+    if a.save:
+        review.save(new, r)
+        print(f"saved the review on v{new}")
+
+
 def cmd_weekly(a: argparse.Namespace) -> None:
     from . import weekly
     checks, metrics = weekly.run_checks(), weekly.run_metrics()
@@ -136,6 +154,11 @@ def cmd_weekly(a: argparse.Namespace) -> None:
         r = refit.run(db.run_query(paths.query("model_training")))
         version = refit.next_version()
         refit.save(r, version, "Weekly refit (challenger).")
+        from . import review
+        live = next(x["version"] for x in review.versions() if x["status"] == "live")
+        rv = review.compare(version, live)
+        review.save(version, rv)
+        print(review.summary(rv))
         cs = {s.stage: s for s in r.stages}["call_start"]
         print(f"saved challenger v{version}: call-start Brier {cs.brier_model:.4f} vs price {cs.brier_price:.4f}, k {cs.k_final:.3f}")
 
@@ -164,6 +187,11 @@ def main() -> None:
     wk.add_argument("--save", action="store_true", help="write them to ops.* (rmm_rw)")
     wk.add_argument("--refit", action="store_true", help="also refit and store a challenger version (rmm_rw)")
     wk.set_defaults(fn=cmd_weekly)
+    rv = sub.add_parser("review", help="compare a model version with the live one (or another)")
+    rv.add_argument("--version", type=int, help="version to review (default: newest challenger)")
+    rv.add_argument("--against", type=int, help="version to compare with (default: the live one)")
+    rv.add_argument("--save", action="store_true", help="store the review on the version (rmm_rw)")
+    rv.set_defaults(fn=cmd_review)
     md = sub.add_parser("models", help="list model versions and which one is live")
     md.add_argument("--page", action="store_true", help="also write outputs/models/index.html and README.md")
     md.set_defaults(fn=cmd_models)

@@ -46,7 +46,10 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] `ops` schema and `python -m rmm weekly`: job freshness, transcript gaps, settlement-vs-transcript audit, labels, CHECK DATE, call-time confidence, settlement lag, score logging, model age; live grading; calibration
 - [x] Railway service `research-weekly` (Mon 01:00 UTC): `weekly --save --refit`
 - [x] Retire R: `refit_models.R` kept only as the parity reference
-- [x] Models page (versions, backtest by month, calibration, coefficient changes)
+- [x] Models page: latest release vs. live (forward test + walk-forward head-to-head, Brier and ¢/trade), release history, variable strength and effects (forest charts with 95% intervals), risk model (rules matrix and what it adds), backtest, definitions
+- [x] `python -m rmm review`; every weekly challenger is reviewed against the live model and the review is stored with it
+- [x] Model Review task (Sundays 22:11 ET): sends the release to you before anything is promoted
+- [ ] **Look into October**: on the 402 markets since Oct 9, both v1 and v2 trail the market price at call start (Brier 0.162 vs 0.1595, about −5¢ per trade). First item for the phase 4 research loop
 - [x] Fixed: live Brier and calibration graded on `result = 'YES'` (`won` in `v_mentions_history` means the trade won)
 
 ## Phase 3 · Sunday batch
