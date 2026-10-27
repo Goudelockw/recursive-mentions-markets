@@ -17,7 +17,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from . import db, review
+from . import db, horizons, review
 from .variables import DEFS, MODELS, RISK_POINTS, label
 
 STAGES = {"call_start": "At call start (after the release)", "early_24h": "24h before the call"}
@@ -34,6 +34,7 @@ class Data:
     risk_perf: list[dict]
     risk: dict
     typical: dict
+    horizons: list
     generated: datetime
 
 
@@ -72,7 +73,8 @@ def load(now: datetime) -> Data:
             s = train[t].dropna()
             if len(s):
                 typical[t] = (float(s.quantile(.1)), float(s.median()), float(s.quantile(.9)), float(s.mean()))
-    return Data(versions, coefs, monthly, calibration, live_results, risk_perf, review.risk_rules(), typical, now)
+    hz = horizons.analyze(train=train)
+    return Data(versions, coefs, monthly, calibration, live_results, risk_perf, review.risk_rules(), typical, hz, now)
 
 
 # ---------------------------------------------------------------- small helpers
@@ -365,7 +367,13 @@ def render_html(d: Data) -> str:
     sub = f"Trained through {live['trained_through']}, live since {live['promoted']}. {live_line}" if live else live_line
     cand = (f"Latest release: v{newest['version']} ({newest['status']})"
             + (f" · {newest['review']['verdict']}" if newest and newest.get("review") else "")) if newest else ""
-    return TEMPLATE.format(title=e(title), sub=e(sub), cand=e(cand), latest=latest, history=history or "<p class='meta'>No earlier versions.</p>",
+    hz = d.horizons
+    lead = (horizons.line_svg(hz, [("brier_market", "mkt", "Market price"), ("brier_model", "mdl", "Model")], "{:.3f}",
+                              label="Brier score by time before the call")
+            + "".join([]))
+    cents = horizons.line_svg(hz, [("cents", "mdl", "Model")], "{:+.1f}¢", zero=True, label="Cents per trade by time before the call")
+    return TEMPLATE.format(title=e(title), sub=e(sub), cand=e(cand), latest=latest, lead=lead, cents=cents,
+                           lead_table=horizons.table(hz), history=history or "<p class='meta'>No earlier versions.</p>",
                            drivers=drivers(d, live["version"], prev_live) if live else "", risk=risk_section(d),
                            charts="".join(charts), calib=calib, defs=definitions(d),
                            generated=f"{d.generated:%Y-%m-%d %H:%M} UTC")
@@ -404,11 +412,11 @@ TEMPLATE = """<title>Models</title>
 <style>
 :root{{--bg:#f6f7f9;--surface:#fff;--fg:#17202b;--muted:#5b6675;--line:#dde2e8;--gain:#2a78d6;--loss:#e34948;--fillc:#9aa3ad;
 --ok:#1d7a4a;--ok-bg:#e4f3ea;--you:#6a3fb0;--you-bg:#f1ebfb;--warn:#a86a00;--warn-bg:#fbf1dc;--bad:#b3261e;--bad-bg:#fbe5e3;--shade:#fde7d7;
---display:"Archivo","Helvetica Neue",Arial,sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}}
+--mkt:#eb6834;--display:"Archivo","Helvetica Neue",Arial,sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}}
 @media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{--bg:#0f141a;--surface:#161d26;--fg:#e6ebf1;--muted:#9aa6b4;--line:#2a3440;
---gain:#3987e5;--loss:#e66767;--fillc:#6b7480;--ok:#5fcf91;--ok-bg:#15301f;--you:#b897f0;--you-bg:#2a1f40;--warn:#e6b04d;--warn-bg:#352812;--bad:#f08079;--bad-bg:#3a1714;--shade:#3a2416;color-scheme:dark}}}}
+--gain:#3987e5;--loss:#e66767;--fillc:#6b7480;--ok:#5fcf91;--ok-bg:#15301f;--you:#b897f0;--you-bg:#2a1f40;--warn:#e6b04d;--warn-bg:#352812;--bad:#f08079;--bad-bg:#3a1714;--shade:#3a2416;--mkt:#d95926;color-scheme:dark}}}}
 :root[data-theme="dark"]{{--bg:#0f141a;--surface:#161d26;--fg:#e6ebf1;--muted:#9aa6b4;--line:#2a3440;
---gain:#3987e5;--loss:#e66767;--fillc:#6b7480;--ok:#5fcf91;--ok-bg:#15301f;--you:#b897f0;--you-bg:#2a1f40;--warn:#e6b04d;--warn-bg:#352812;--bad:#f08079;--bad-bg:#3a1714;--shade:#3a2416;color-scheme:dark}}
+--gain:#3987e5;--loss:#e66767;--fillc:#6b7480;--ok:#5fcf91;--ok-bg:#15301f;--you:#b897f0;--you-bg:#2a1f40;--warn:#e6b04d;--warn-bg:#352812;--bad:#f08079;--bad-bg:#3a1714;--shade:#3a2416;--mkt:#d95926;color-scheme:dark}}
 *{{box-sizing:border-box}}
 body{{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14.5px;line-height:1.5}}
 .wrap{{max-width:1120px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:32px}}
@@ -444,6 +452,11 @@ figure{{margin:0}} figcaption{{display:flex;justify-content:space-between;gap:8p
 .chart .hit{{fill:transparent;stroke:none}} .chart .ci{{stroke-width:2;fill:none}} .chart .pt{{stroke:var(--surface);stroke-width:2}}
 .chart .row:hover .hit{{fill:var(--bg)}} .chart .bar:hover rect:not(.hit){{opacity:.8}}
 .chart .diag{{stroke:var(--muted);stroke-dasharray:3 3;stroke-width:1}}
+.chart .ln{{fill:none;stroke-width:2}} .chart .ln.mdl{{stroke:var(--gain)}} .chart .ln.mkt{{stroke:var(--mkt)}}
+.chart .mk{{stroke:var(--surface);stroke-width:2}} .chart .mk.mdl{{fill:var(--gain)}} .chart .mk.mkt{{fill:var(--mkt)}}
+.chart .dl{{font-size:11.5px;font-family:var(--body)}} .chart .mdlt{{fill:var(--fg)}} .chart .mktt{{fill:var(--fg)}}
+.chart .tick.sub{{font-size:9.5px;opacity:.85}} .chart .cross{{stroke:transparent;stroke-width:1}}
+.chart .col:hover .cross{{stroke:var(--muted)}} .line{{max-width:900px}}
 .legend{{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}} .legend i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}}
 code{{font-family:var(--mono);font-size:.9em}}
 </style>
@@ -453,12 +466,18 @@ code{{font-family:var(--mono);font-size:.9em}}
   <h1>{title}</h1>
   <p class="sub">{sub}</p>
   <p class="sub"><b>{cand}</b></p>
-  <nav><a href="#latest">Latest release</a><a href="#history">Release history</a><a href="#drivers">What drives the model</a>
+  <nav><a href="#latest">Latest release</a><a href="#lead">Leading into the call</a><a href="#history">Release history</a><a href="#drivers">What drives the model</a>
   <a href="#risk">Risk model</a><a href="#backtest">Backtest</a><a href="#definitions">Definitions</a></nav>
 </header>
 <section id="latest"><h2>Latest release: is it better?</h2>
 <p class="meta" style="margin:0"><b>Forward test</b>: markets settled after the older version's data ended. The older version is scored with its frozen coefficients (what the board traded); the newer one with walk-forward predictions. <b>Walk-forward</b>: both versions' month-by-month backtests on the markets both cover. Brier: lower is better; <b>Price</b> is the market alone, the bar to beat. <b>Better in</b>: share of 1,000 call-level resamples where the newer version wins. ¢/trade: trading at the real quote after fees (trades in brackets).</p>
 {latest}</section>
+<section id="lead"><h2>Leading into the call</h2>
+<p class="meta" style="margin:0">The live model's specification scored at fixed times before the call, using the quote at that time. At each point the model is refit month by month with that point's price, so every score is out of sample; call start uses the call-start model (with the release). Each point compares model and market on the same markets; further out, fewer markets were listed yet (counts under the axis). 30 days has too few calls to score yet.</p>
+<div class="legend"><span><i style="background:var(--mkt)"></i>market price alone</span><span><i style="background:var(--gain)"></i>model</span><span>Hover a point for its numbers.</span></div>
+<figure class="card"><figcaption><b>Brier score (lower is better)</b><span>the gap between the lines is the model's edge</span></figcaption>{lead}</figure>
+<figure class="card"><figcaption><b>Cents per trade, model trades at that time</b><span>at the real quote after fees, edge ≥ 2¢</span></figcaption>{cents}</figure>
+{lead_table}</section>
 <section id="history"><h2>Release history</h2>{history}</section>
 <section id="drivers"><h2>What drives the live model</h2>
 <p class="meta" style="margin:0">Each dot is a variable's effect on the log-odds of YES: for a yes/no variable, switching it from 0 to 1; for a number, one typical change (its standard deviation). Lines are 95% intervals; a line crossing zero means the data can't tell the effect from nothing. Grey rows are fill-ins that only correct for missing data. Hover a row for the plain-English effect.</p>

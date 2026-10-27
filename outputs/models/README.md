@@ -1,6 +1,6 @@
 # Models
 
-_Generated 2026-10-27 03:41 UTC from `kalshi.model_versions`. Promote with `select kalshi.promote_model(N);` (database owner only); promote the previous version to roll back._
+_Generated 2026-10-27 03:52 UTC from `kalshi.model_versions`. Promote with `select kalshi.promote_model(N);` (database owner only); promote the previous version to roll back._
 
 ## Release history
 

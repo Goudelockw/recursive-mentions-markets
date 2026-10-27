@@ -128,6 +128,12 @@ class StageResult:
 def walk_forward(d: pd.DataFrame, stage: str) -> StageResult:
     """Each month scored by models trained only on earlier months."""
     Ff, Bf, pcol, _ = STAGES[stage]
+    return walk_forward_spec(d, Ff, Bf, pcol, stage)
+
+
+def walk_forward_spec(d: pd.DataFrame, Ff: list[str], Bf: list[str], pcol: str, stage: str) -> StageResult:
+    """walk_forward for any fundamental terms, combined terms and price column (rmm/horizons.py
+    uses it to score the model at other times before the call)."""
     pB = np.full(len(d), np.nan)
     has_p = d[pcol].notna()
     months = 0
@@ -144,6 +150,9 @@ def walk_forward(d: pd.DataFrame, stage: str) -> StageResult:
         pB[te.to_numpy()] = fit(Bf, x).predict(y)
         months += 1
     s = ~np.isnan(pB)
+    if not s.any():   # no month had enough earlier calls to train on
+        empty = pd.DataFrame(columns=["ticker", "stage", "p_model", "won", "price"])
+        return StageResult(stage, empty, float("nan"), float("nan"), float("nan"), 0)
     pr = expit(d.loc[s, pcol].to_numpy())
     won = d.loc[s, "won"].to_numpy()
     mon = d.loc[s, "month"].to_numpy()
