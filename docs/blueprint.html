@@ -1,0 +1,488 @@
+<title>Mentions Loop Blueprint</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column. Lane colors (data / Python / Claude / you) recur everywhere so "who does this" is visible at a glance. */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --fg:#17202b; --muted:#5b6675; --line:#dde2e8;
+  --data:#6b7686; --data-bg:#eef0f3;
+  --py:#1f5fa8;  --py-bg:#e7f0fb;
+  --cl:#b0611a;  --cl-bg:#fbf0e4;
+  --you:#6a3fb0; --you-bg:#f1ebfb;
+  --ok:#1d7a4a; --ok-bg:#e4f3ea; --warn:#a86a00; --warn-bg:#fbf1dc; --bad:#b3261e; --bad-bg:#fbe5e3;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d26; --fg:#e6ebf1; --muted:#9aa6b4; --line:#2a3440;
+  --data:#9aa6b4; --data-bg:#1e2630;
+  --py:#7fb2ee; --py-bg:#172a40;
+  --cl:#eba062; --cl-bg:#35240f;
+  --you:#b897f0; --you-bg:#2a1f40;
+  --ok:#5fcf91; --ok-bg:#15301f; --warn:#e6b04d; --warn-bg:#352812; --bad:#f08079; --bad-bg:#3a1714; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d26; --fg:#e6ebf1; --muted:#9aa6b4; --line:#2a3440;
+  --data:#9aa6b4; --data-bg:#1e2630;
+  --py:#7fb2ee; --py-bg:#172a40;
+  --cl:#eba062; --cl-bg:#35240f;
+  --you:#b897f0; --you-bg:#2a1f40;
+  --ok:#5fcf91; --ok-bg:#15301f; --warn:#e6b04d; --warn-bg:#352812; --bad:#f08079; --bad-bg:#3a1714; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding-block:40px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:17px;color:var(--muted);max-width:64ch}
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+code,.mono{font-family:var(--mono);font-size:.9em}
+.note{font-size:13px;color:var(--muted)}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:500}
+.chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.c-data{background:var(--data-bg)} .c-data i{background:var(--data)}
+.c-py{background:var(--py-bg)} .c-py i{background:var(--py)}
+.c-cl{background:var(--cl-bg)} .c-cl i{background:var(--cl)}
+.c-you{background:var(--you-bg)} .c-you i{background:var(--you)}
+
+/* cadence board */
+.cadence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.cadence{grid-template-columns:1fr}}
+.col{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.col-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.col-h .freq{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.job{display:grid;grid-template-columns:12px minmax(0,1fr);gap:10px}
+.job .dot{width:10px;height:10px;border-radius:50%;margin-top:6px}
+.d-data{background:var(--data)} .d-py{background:var(--py)} .d-cl{background:var(--cl)} .d-you{background:var(--you)}
+.job b{font-weight:600;font-size:14px}
+.job .t{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:6px}
+.job p{font-size:13.5px;color:var(--muted)}
+.out{font-family:var(--mono);font-size:12px;color:var(--fg);background:var(--bg);border-radius:4px;padding:1px 6px;display:inline-block;margin-top:3px;overflow-wrap:anywhere}
+
+/* trade sheet mock */
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sheet-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sheet-top .t{font-family:var(--display);font-weight:700;font-size:17px}
+.example{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:2px 6px}
+.preflight{display:flex;flex-wrap:wrap;gap:8px 18px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--line);font-size:13px}
+.preflight span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--ok);vertical-align:1px}
+.preflight span.w::before{background:var(--warn)}
+.pill{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:999px;white-space:nowrap;display:inline-block}
+.p-ok{background:var(--ok-bg);color:var(--ok)} .p-warn{background:var(--warn-bg);color:var(--warn)} .p-bad{background:var(--bad-bg);color:var(--bad)} .p-you{background:var(--you-bg);color:var(--you)} .p-n{background:var(--bg);color:var(--muted)}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+.sheet table{min-width:820px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--bg);white-space:nowrap}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+th.num{text-align:right}
+tr:last-child td{border-bottom:0}
+.grp td{background:var(--bg);font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--muted);padding:6px 12px}
+.sub{color:var(--muted);font-size:12.5px}
+.skip td{color:var(--muted)}
+.sheet-foot{padding:12px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+
+/* risk map */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.split{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card ul{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.rmap{display:grid;grid-template-columns:64px repeat(4,minmax(0,1fr));gap:4px;font-size:12px}
+.rmap .h{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:4px 0}
+.rmap .rl{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-variant-numeric:tabular-nums}
+.cell{min-height:44px;border-radius:5px;padding:4px;display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start}
+.c-okc{background:var(--bg)}
+.c-av{background:var(--bad-bg)}
+.c-th{background:repeating-linear-gradient(45deg,var(--bg),var(--bg) 4px,var(--surface) 4px,var(--surface) 8px)}
+.mk{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border-radius:3px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.mk.al{border-color:var(--ok);color:var(--ok)}
+.mk.cf{border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.rkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.rkey i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line)}
+
+/* folder tree */
+.tree{font-family:var(--mono);font-size:13px;line-height:1.7;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;white-space:pre;margin:0}
+.tree .c{color:var(--muted)}
+.tree .f{color:var(--py)}
+
+/* ladder */
+.ladder{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.ladder{grid-template-columns:1fr}}
+.rung{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.rung ul{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.r1{border-top:4px solid var(--ok)} .r2{border-top:4px solid var(--warn)} .r3{border-top:4px solid var(--you)}
+
+/* cost */
+.cost{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.cost{grid-template-columns:1fr}}
+
+/* phases */
+.phases{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.phase{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.phase .n{font-family:var(--display);font-weight:800;font-size:26px;color:var(--muted);line-height:1}
+.phase .body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.phase .row{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.phase ul{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.phase .done{font-size:13px;color:var(--muted)}
+.phase .done b{color:var(--fg);font-weight:600}
+.phase.now{border-color:var(--py);box-shadow:inset 3px 0 0 var(--py)}
+.phase.now .n{color:var(--py)}
+</style>
+
+<div class="wrap">
+
+  <header style="display:flex;flex-direction:column;gap:14px">
+    <div class="eyebrow">recursive-mentions-markets · plan v3 · Oct 27, 2026</div>
+    <h1>Trades every morning. Everything else once a week.</h1>
+    <p class="lede">With about a dozen markets settling each week, a daily evaluation would mostly repeat itself and keep the database awake. So the daily work is one short read of the board, turned into a trade sheet. Health checks, grading, fixes, research and cleanup all run as one batch on Sunday night.</p>
+    <div class="legend">
+      <span class="chip c-data"><i></i>Existing data pipeline</span>
+      <span class="chip c-py"><i></i>Python on Railway</span>
+      <span class="chip c-cl"><i></i>Claude scheduled task (your subscription)</span>
+      <span class="chip c-you"><i></i>You</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Cadence · Eastern time</div>
+      <h2>What runs, how often, and what it produces</h2>
+    </div>
+    <div class="cadence">
+      <div class="col">
+        <div class="col-h"><h3>Every weekday morning</h3><span class="freq">~2 min of database</span></div>
+        <div class="job"><span class="dot d-cl"></span><div><b>Trade Sheet task</b><span class="t">06:41</span>
+          <p>A quick check that last night's sync ran and the board is current. Then one board query for calls in the next 36 hours: trades to place, where each sits in the risk model, and the skips worth knowing about.</p>
+          <span class="out">outputs/trade-sheets/2026-10/2026-10-27_trade-sheet.md</span><br><span class="out">…_trade-sheet.csv</span></div></div>
+        <div class="job"><span class="dot d-you"></span><div><b>On your phone</b><span class="t">~06:45</span>
+          <p>Push and email with the trade count and a link to the Trade Sheet page.</p></div></div>
+        <p class="note">This task only reads. It fixes nothing, it just tells you if the board looks stale.</p>
+      </div>
+      <div class="col">
+        <div class="col-h"><h3>Sunday night</h3><span class="freq">one batch, then the database sleeps</span></div>
+        <div class="job"><span class="dot d-py"></span><div><b>research weekly</b><span class="t">21:00</span>
+          <p>Health checks, grading of the week's settled trades, calibration by price range, drift.</p>
+          <span class="out">ops.health_checks · ops.weekly_metrics</span></div></div>
+        <div class="job"><span class="dot d-py"></span><div><b>research refit</b><span class="t">21:20</span>
+          <p>Python replacement for <code>refit_models.R</code>. Refits every week and saves the result as a challenger. The live model only changes on evidence (see below).</p>
+          <span class="out">outputs/models/v8_2026-11-01/fit-report.md</span></div></div>
+        <div class="job"><span class="dot d-cl"></span><div><b>Ops task</b><span class="t">21:41</span>
+          <p>Fixes data gaps and failed jobs, opens PRs for code bugs, writes the Weekly Review.</p>
+          <span class="out">outputs/weekly/2026-W44_weekly-review.md</span></div></div>
+        <div class="job"><span class="dot d-cl"></span><div><b>Librarian task</b><span class="t">22:41</span>
+          <p>Keeps the repo, the outputs and Neon tidy (see below).</p>
+          <span class="out">outputs/weekly/2026-W44_librarian-log.md</span></div></div>
+      </div>
+      <div class="col">
+        <div class="col-h"><h3>Monthly, or whenever you ask</h3><span class="freq">when there's enough new data</span></div>
+        <div class="job"><span class="dot d-cl"></span><div><b>Research task</b><span class="t">1st Monday</span>
+          <p>Diagnoses misses, tests 2–3 ideas on a Neon branch with the fixed scoring rules, and opens one PR. You can also run it any time you have an idea.</p>
+          <span class="out">outputs/experiments/EXP-0007_news-volume/report.md</span></div></div>
+        <div class="job"><span class="dot d-you"></span><div><b>You decide</b><span class="t">anytime</span>
+          <p>Reject it, run it in shadow, promote it at the end of the season, or fast-track it if it clears the bar below.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Every weekday at ~6:45am</div>
+      <h2>The Trade Sheet</h2>
+      <p class="note">Built straight from <code>v_mentions_board</code>, so it matches the board exactly. Grouped by call and ordered by entry window.</p>
+    </div>
+    <div class="sheet">
+      <div class="sheet-top"><span class="t">Trade Sheet · Tue Oct 27</span><span class="example">Example data</span></div>
+      <div class="preflight"><span>sync 06:00 ok</span><span>board refreshed 06:02</span><span>release features current</span><span class="w">1 call time unverified (MSFT)</span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Market</th><th>Do</th><th class="num">Price</th><th class="num">Model</th><th class="num">Edge</th><th class="num">Stake</th><th>Favorite</th><th class="num">Avoid pts</th><th>Risk tier</th><th>vs. risk model</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="10">META · Wed Oct 28 16:30 · ENTRY 1 now (30h–12h window)</td></tr>
+            <tr><td><b>"Llama"</b><div class="sub">said 4 of last 4</div></td><td><span class="pill p-ok">TRADE+</span> Buy NO</td><td class="num">23¢</td><td class="num">64%</td><td class="num">+9.8¢</td><td class="num">2.0%</td><td>YES 78¢</td><td class="num">3</td><td><span class="pill p-bad">AVOID</span></td><td><span class="pill p-ok">Aligned</span> fading an AVOID favorite</td></tr>
+            <tr><td><b>"Superintelligence"</b><div class="sub">said 2 of last 4</div></td><td><span class="pill p-ok">TRADE</span> Buy NO</td><td class="num">39¢</td><td class="num">52%</td><td class="num">+6.4¢</td><td class="num">1.1%</td><td>YES 62¢</td><td class="num">1</td><td><span class="pill p-n">OK</span></td><td><span class="pill p-n">Neutral</span></td></tr>
+            <tr class="grp"><td colspan="10">GOOGL · Wed Oct 28 16:30 · ENTRY 1 now</td></tr>
+            <tr><td><b>"Tariff"</b><div class="sub">ext · politics</div></td><td><span class="pill p-ok">TRADE</span> Buy NO</td><td class="num">42¢</td><td class="num">49%</td><td class="num">+5.9¢</td><td class="num">0.9%</td><td>YES 59¢</td><td class="num">2</td><td><span class="pill p-n">OK</span></td><td><span class="pill p-n">Neutral</span></td></tr>
+            <tr class="skip"><td><b>"Waymo"</b><div class="sub">said 4 of last 4</div></td><td><span class="pill p-you">SKIP</span> was Buy YES</td><td class="num">84¢</td><td class="num">89%</td><td class="num">+3.1¢</td><td class="num">–</td><td>YES 84¢</td><td class="num">3</td><td><span class="pill p-bad">AVOID</span></td><td><span class="pill p-bad">Conflict</span> rule 6: buying an AVOID favorite</td></tr>
+            <tr class="grp"><td colspan="10">MSFT · Wed Oct 28 17:30 (check IR page) · ENTRY 1 opens 11:30 today</td></tr>
+            <tr><td><b>"Copilot"</b><div class="sub">multi · 10+ times</div></td><td><span class="pill p-ok">TRADE</span> Buy NO</td><td class="num">31¢</td><td class="num">61%</td><td class="num">+4.2¢</td><td class="num">0.8%</td><td>YES 70¢</td><td class="num">0</td><td><span class="pill p-n">Thin history</span></td><td><span class="pill p-n">No call</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sheet-foot"><span><b style="color:var(--fg)">4 trades</b> · 4.8% of bankroll · META call at 5.1% of its 6% cap</span><span>Limit orders 1¢ better than quote. Post at the midpoint if the spread is 10¢+.</span></div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <h3>Where today's trades sit in the risk model</h3>
+        <p class="note">Favorite's price range against avoid points, shaded by verdict from <code>avoid_point_rules</code>. Green tags are aligned trades, red struck-out tags are skipped conflicts.</p>
+        <div class="tbl-wrap" style="overflow-x:auto">
+        <div class="rmap" style="min-width:340px">
+          <div></div><div class="h">0 pts</div><div class="h">1 pt</div><div class="h">2 pts</div><div class="h">3+ pts</div>
+          <div class="rl">90–98¢</div><div class="cell c-okc"></div><div class="cell c-okc"></div><div class="cell c-th"></div><div class="cell c-av"></div>
+          <div class="rl">80–89¢</div><div class="cell c-okc"></div><div class="cell c-okc"></div><div class="cell c-av"></div><div class="cell c-av"><span class="mk cf">Waymo</span></div>
+          <div class="rl">70–79¢</div><div class="cell c-th"><span class="mk">Copilot</span></div><div class="cell c-okc"></div><div class="cell c-av"></div><div class="cell c-av"><span class="mk al">Llama</span></div>
+          <div class="rl">60–69¢</div><div class="cell c-okc"></div><div class="cell c-okc"><span class="mk">Superintel.</span></div><div class="cell c-okc"></div><div class="cell c-th"></div>
+          <div class="rl">50–59¢</div><div class="cell c-okc"></div><div class="cell c-okc"></div><div class="cell c-okc"><span class="mk">Tariff</span></div><div class="cell c-th"></div>
+        </div>
+        </div>
+        <div class="rkey"><span><i style="background:var(--bad-bg)"></i>AVOID</span><span><i style="background:var(--bg)"></i>OK</span><span><i class="c-th"></i>Thin history</span><span class="example" style="margin-left:auto">Example data</span></div>
+      </div>
+      <div class="card">
+        <h3>What each column tells you</h3>
+        <ul>
+          <li><b>Do:</b> the board's action and which side to buy. SKIP rows appear only when the risk model blocked a trade the model wanted.</li>
+          <li><b>Edge and stake:</b> after fees, at 1/8 Kelly within the 2% per-market and 6% per-call caps.</li>
+          <li><b>Favorite, avoid points, risk tier:</b> straight from <code>v_open_risk_screen</code>.</li>
+          <li><b>vs. risk model:</b> <span class="pill p-ok">Aligned</span> means the model fades a favorite the risk model distrusts (backtest +13.5¢). <span class="pill p-bad">Conflict</span> means the two disagree, so it's skipped.</li>
+          <li><b>Preflight line:</b> if it isn't green, don't trade off the sheet until you've checked the board.</li>
+        </ul>
+        <p class="note">An optional second run in the afternoon could cover Entry 2, once releases are filed. Leave it out to start and add it if you find yourself checking manually.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Clean and organized</div>
+      <h2>One place for everything, and a Librarian to keep it that way</h2>
+    </div>
+    <div class="split">
+<pre class="tree">recursive-mentions-markets/
+├── <span class="f">README.md</span>                <span class="c"># what the system is, kept current</span>
+├── <span class="f">SYSTEM.md</span>                <span class="c"># your system doc, Librarian-maintained</span>
+├── research/                <span class="c"># Python: weekly, refit, evaluate</span>
+├── sql/                     <span class="c"># every view and migration, numbered</span>
+├── agents/                  <span class="c"># one folder per scheduled task</span>
+│   ├── trade-sheet/  ops/  librarian/  research/
+├── outputs/
+│   ├── trade-sheets/2026-10/
+│   │   └── 2026-10-27_trade-sheet.md · .csv
+│   ├── weekly/
+│   │   └── 2026-W44_weekly-review.md
+│   │   └── 2026-W44_librarian-log.md
+│   ├── models/v8_2026-11-01/fit-report.md
+│   ├── experiments/EXP-0007_news-volume/
+│   └── archive/             <span class="c"># older than 90 days</span>
+└── docs/decisions/          <span class="c"># why each rule or model changed</span></pre>
+      <div class="card">
+        <h3>Naming rules</h3>
+        <ul>
+          <li>Dates first, ISO format: <code>2026-10-27_</code> for daily, <code>2026-W44_</code> for weekly.</li>
+          <li>Then the output type, in lowercase kebab-case: <code>_trade-sheet</code>, <code>_weekly-review</code>.</li>
+          <li>Experiments get a permanent ID and a slug: <code>EXP-0007_news-volume</code>.</li>
+          <li>Models are versioned with their fit date: <code>v8_2026-11-01</code>. The version matches <code>model_coefficients.model_version</code>.</li>
+          <li>Every output is committed to the repo, so you can browse history on GitHub. The Trade Sheet and Weekly Review are also pinned as pages.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ladder">
+      <div class="rung r1">
+        <h3>Librarian does it, logs it</h3>
+        <ul>
+          <li>Rename or move outputs that break the naming rules</li>
+          <li>Move outputs older than 90 days into <code>archive/</code></li>
+          <li>Delete Neon experiment branches older than 30 days that aren't attached to an open PR</li>
+          <li>Update <code>SYSTEM.md</code> when a job, view or rule changed that week</li>
+        </ul>
+      </div>
+      <div class="rung r2">
+        <h3>Librarian opens a PR</h3>
+        <ul>
+          <li>Remove dead code or duplicate scripts</li>
+          <li>Drop SQL views nothing has read in 60 days (it shows the evidence)</li>
+          <li>Consolidate overlapping docs</li>
+        </ul>
+      </div>
+      <div class="rung r3">
+        <h3>Librarian asks you</h3>
+        <ul>
+          <li>Deleting any table or data in <code>kalshi</code></li>
+          <li>Closing PRs or branches someone else opened</li>
+          <li>Anything in Railway settings or secrets</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Sunday Ops task</div>
+      <h2>Fixing data gaps and pipeline errors, once a week</h2>
+      <p class="note">The checks look back over the whole week, so a once-a-week run catches the same gaps a daily run would. Anything urgent during the week shows up in the Trade Sheet's preflight line.</p>
+    </div>
+    <div class="ladder">
+      <div class="rung r1">
+        <h3>Fixes it, then tells you</h3>
+        <ul>
+          <li>Re-run failed jobs or refresh-chain steps</li>
+          <li>Missing transcripts: Fortune, then Equibles backfill</li>
+          <li><code>precall --refetch-missing</code>, <code>sweep</code></li>
+          <li>Label words the weekly labeler missed</li>
+        </ul>
+      </div>
+      <div class="rung r2">
+        <h3>Writes the fix, you merge</h3>
+        <ul>
+          <li>Bug fixes in <code>kalshi-worker</code></li>
+          <li>A new health check for each new kind of failure</li>
+          <li>Timeouts, parsers</li>
+        </ul>
+      </div>
+      <div class="rung r3">
+        <h3>Drafts it, you decide</h3>
+        <ul>
+          <li>Call-time overrides that disagree with the ticker date</li>
+          <li>Risk overrides, trading rules, avoid points</li>
+          <li>Coefficients, k, sizing caps, fees</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Getting better</div>
+      <h2>When the live model changes</h2>
+      <p class="note">The refit runs every week, but the live model changes only on evidence. Your backtest was walk-forward by month, so that is the procedure it supports.</p>
+    </div>
+    <div class="ladder">
+      <div class="rung r2">
+        <h3>Normal: end of season</h3>
+        <ul>
+          <li>The weekly challenger is compared with the live model in the Weekly Review: coefficient and k drift, backtest Brier and ¢/trade</li>
+          <li>Switch at the end of each season, or sooner if the coefficients drift materially</li>
+          <li>You approve the switch</li>
+        </ul>
+      </div>
+      <div class="rung r1">
+        <h3>Fast track: clearly better</h3>
+        <ul>
+          <li>Beats the live model on the sealed holdout by more than the bar for the number of ideas tried</li>
+          <li>Holds in both periods and in 90%+ of resamples</li>
+          <li>Leakage review finds nothing, and there's a reason it should work</li>
+          <li>Goes live right away at <b>half stake</b>, with <b>automatic rollback</b> if live results leave the backtest's range</li>
+        </ul>
+      </div>
+      <div class="rung r3">
+        <h3>Not a model change: a fix</h3>
+        <ul>
+          <li>A wrong feature, bad data or a leakage bug</li>
+          <li>Ships as a fix PR straight away</li>
+          <li>The Weekly Review notes which past trades it affected</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Research covers every layer, each with its own score</h3>
+      <div class="tbl-wrap" style="border:0">
+        <table style="min-width:640px">
+          <thead><tr><th>Layer</th><th>What the ideas look like</th><th>Scored by</th></tr></thead>
+          <tbody>
+            <tr><td><b>Pricing</b></td><td>How to read the market: midpoint vs. last trade, spread adjustments, where the 3–4¢ YES bias is largest, price moves</td><td>Brier vs. raw midpoint</td></tr>
+            <tr><td><b>Fundamental</b></td><td>New features and data sources, better Claude labels, interactions</td><td>Brier and log loss, without the price</td></tr>
+            <tr><td><b>Combined</b></td><td>Which inputs get added to price, how k is set, k by segment</td><td>Brier vs. market, ¢/trade after fees</td></tr>
+            <tr><td><b>Risk</b></td><td>New avoid markers, and re-checking every existing rule so stale ones are retired</td><td>Extra losses per 100 in both periods; aligned and conflict ¢/trade</td></tr>
+            <tr><td><b>Trading rules and timing</b></td><td>Skip rules, entry windows</td><td>¢/trade on the affected trades, with a higher bar</td></tr>
+            <tr><td><b>Sizing</b></td><td>Kelly fraction, caps</td><td>Shown as a trade-off. Always your call</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Accurate information</div>
+      <h2>Checks at two levels</h2>
+    </div>
+    <div class="cost">
+      <div class="card">
+        <h3>Every morning, in the Trade Sheet</h3>
+        <p class="note">Only the markets on today's sheet, so it costs almost nothing.</p>
+        <ul>
+          <li><b>Pipeline:</b> sync, filings, reconcile and transcripts ran on time, and quotes are current. If not, the sheet says <span class="pill p-bad">STOP</span></li>
+          <li><b>Each market:</b> transcript history, a fundamental score, a fresh quote, valence and incentive labels. A failure marks the row <b>DATA ISSUE</b> and lists it under <i>Needs you</i></li>
+          <li><b>Each call:</b> an estimated call time in the entry window, a passed call with no release, a call over its 6% cap</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Every Sunday, in the weekly batch</h3>
+        <ul>
+          <li><b>The pipeline ran:</b> job freshness, refresh-chain failures, settlement lag, missing precall prices</li>
+          <li><b>The data is complete:</b> transcripts for every settled call, releases matched to the right quarter, speaker roles resolved, Q&amp;A present, no missing labels</li>
+          <li><b>The data is accurate:</b> each settled result checked against our own transcript count. If we count the word and the market settled NO, or the reverse, the transcript or the word matching is wrong. Also estimated vs. actual call times, feature ranges and drift, and a sample of labels re-checked</li>
+          <li><b>The model is healthy:</b> calibration by price range, live vs. backtest ¢/trade, coefficient age</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Keeping Neon cheap</div>
+      <h2>Where the database cost comes from</h2>
+    </div>
+    <div class="cost">
+      <div class="card">
+        <h3>What this plan adds</h3>
+        <ul>
+          <li><b>Daily:</b> one read of the board on weekdays, about two minutes of compute.</li>
+          <li><b>Weekly:</b> one batch on Sunday night, with every job back to back so the database wakes once.</li>
+          <li>Live grading snapshots the board when the Trade Sheet runs. That's the moment you trade, so it replaces the 15-minute <code>score-log</code> cron from v1.</li>
+          <li>Experiments run on Neon branches, which are deleted after 30 days.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>The bigger lever is the existing pipeline</h3>
+        <ul>
+          <li>The hourly <code>sync</code> rebuilds all 18 materialized views every time, which probably keeps the database awake most of the day.</li>
+          <li><b>Option:</b> run the refresh chain only when new data arrived, or a few times a day. Keep hourly price pulls only for markets with a call in the next 48h.</li>
+          <li>The first Sunday batch will measure how much time each job keeps the database awake. Decide after seeing the numbers.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Build order</div>
+      <h2>What gets built, in order</h2>
+    </div>
+    <ol class="phases">
+      <li class="phase now"><span class="n">1</span><div class="body">
+        <div class="row"><h3>Repo structure and the Trade Sheet</h3><span class="chip c-cl"><i></i>Claude</span></div>
+        <ul><li>Folder layout, naming rules, README and SYSTEM.md <b>(built)</b></li>
+        <li><code>python -m rmm trade-sheet</code>: markdown, CSV and page, with per-market data checks <b>(built)</b></li>
+        <li><a href="https://claude.ai/artifact/CUHMtiKobQ1TWTjXLiYvoa">Trade Sheet page</a> live with the Oct 27 board <b>(built)</b></li>
+        <li>Weekday 06:41 scheduled task <b>(next)</b></li></ul>
+        <p class="done"><b>Done when:</b> a trade sheet arrives every weekday morning.</p></div></li>
+      <li class="phase"><span class="n">2</span><div class="body">
+        <div class="row"><h3>Python research service</h3><span class="chip c-py"><i></i>Python</span></div>
+        <ul><li>Port <code>refit_models.R</code> and pass the parity test against current coefficients</li>
+        <li><code>research weekly</code> checks and grading, <code>ops</code> schema, model versions</li></ul>
+        <p class="done"><b>Done when:</b> R is retired and a refit runs on Railway.</p></div></li>
+      <li class="phase"><span class="n">3</span><div class="body">
+        <div class="row"><h3>Sunday batch</h3><span class="chip c-cl"><i></i>Claude</span></div>
+        <ul><li>Ops task, Weekly Review, Librarian task</li></ul>
+        <p class="done"><b>Done when:</b> Sunday night fixes the week's gaps and leaves everything tidy.</p></div></li>
+      <li class="phase"><span class="n">4</span><div class="body">
+        <div class="row"><h3>Monthly research and shadow models</h3><span class="chip c-cl"><i></i>Claude</span><span class="chip c-you"><i></i>You</span></div>
+        <ul><li>Fixed scoring rules, a sealed holdout, the experiment ledger</li>
+        <li>Challengers scored in shadow next to the live model</li></ul>
+        <p class="done"><b>Done when:</b> a new model can be promoted on evidence.</p></div></li>
+      <li class="phase"><span class="n">5</span><div class="body">
+        <div class="row"><h3>More market types</h3></div>
+        <ul><li>The same sheet, review and Librarian for each new market type</li></ul></div></li>
+    </ol>
+  </section>
+
+</div>

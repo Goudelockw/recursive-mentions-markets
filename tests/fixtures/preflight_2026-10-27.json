@@ -1,0 +1,44 @@
+[
+ {
+  "check_name": "job:sync",
+  "last_ok": "2026-10-27T10:01:58Z",
+  "hours_since_ok": "0.7",
+  "max_hours": 3,
+  "failed_24h": false
+ },
+ {
+  "check_name": "job:filings",
+  "last_ok": "2026-10-26T22:33:01Z",
+  "hours_since_ok": "12.1",
+  "max_hours": 30,
+  "failed_24h": false
+ },
+ {
+  "check_name": "job:reconcile",
+  "last_ok": "2026-10-27T04:16:33Z",
+  "hours_since_ok": "6.4",
+  "max_hours": 30,
+  "failed_24h": false
+ },
+ {
+  "check_name": "job:transcripts",
+  "last_ok": "2026-10-27T05:04:47Z",
+  "hours_since_ok": "5.6",
+  "max_hours": 30,
+  "failed_24h": false
+ },
+ {
+  "check_name": "quotes",
+  "last_ok": "2026-10-27T10:05:50Z",
+  "hours_since_ok": "0.6",
+  "max_hours": 3,
+  "failed_24h": false
+ },
+ {
+  "check_name": "model:combined",
+  "last_ok": "2026-10-13T14:38:58Z",
+  "hours_since_ok": "331.9",
+  "max_hours": 2880,
+  "failed_24h": false
+ }
+]
