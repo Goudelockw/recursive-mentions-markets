@@ -33,6 +33,16 @@ def weekly(day: date, kind: str, ext: str = "md") -> Path:
     return OUTPUTS / "weekly" / f"{year}-W{week:02d}_{kind}.{ext}"
 
 
+def model_dir(version: int, trained_through: str) -> Path:
+    """outputs/models/v<N>_<trained through>/ (v1 is the R fit trained through 2026-10-09)."""
+    return OUTPUTS / "models" / f"v{version}_{trained_through}"
+
+
+def next_model_version() -> int:
+    found = [int(m.group(1)) for p in (OUTPUTS / "models").glob("v*_*") if (m := re.match(r"v(\d+)_", p.name))]
+    return max(found + [1]) + 1
+
+
 def costs_ledger() -> Path:
     """Running ledger of Neon usage, one row per cost report (not dated: it is appended to)."""
     return OUTPUTS / "costs" / "neon-usage.csv"

@@ -13,6 +13,11 @@
                                                  outputs/weekly/YYYY-Www_cost-report.md and appends
                                                  outputs/costs/neon-usage.csv
 
+  python -m rmm refit [--through YYYY-MM-DD]     Python port of refit_models.R (same results): walk-forward
+                                                 backtest, k, final fit; writes outputs/models/vN_<date>/
+                                                 and compares with kalshi.model_coefficients. Never writes
+                                                 to the database; promotion is a separate step
+
 trade-sheet writes outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html} and prints the
 status line, so a scheduled task can pass it straight to the notification.
 """
@@ -69,6 +74,30 @@ def cmd_cost_report(a: argparse.Namespace) -> None:
     print(f"{head} · {len(report.suggestions)} suggestions")
 
 
+def cmd_refit(a: argparse.Namespace) -> None:
+    import pandas as pd
+
+    from . import refit
+    if a.input:
+        rows = pd.read_json(a.input) if a.input.endswith(".json") else pd.read_csv(a.input)
+    else:
+        rows = db.run_query(paths.query("model_training"))
+    r = refit.run(rows, through=a.through)
+    live = pd.DataFrame(db.run_query(paths.query("model_coefficients_live"))) if not a.input else None
+    version = paths.next_model_version()
+    out = paths.model_dir(version, r.trained_through)
+    out.mkdir(parents=True, exist_ok=True)
+    r.coefficients.to_csv(out / "coefficients.csv", index=False)
+    r.backtest.to_csv(out / "backtest.csv", index=False)
+    cmp = refit.compare(r.coefficients, live) if live is not None and len(live) else None
+    (out / "fit-report.md").write_text(refit.render_md(r, f"v{version}", cmp))
+    print(f"wrote {out.relative_to(paths.ROOT)}/ (coefficients.csv, backtest.csv, fit-report.md)")
+    cs = {s.stage: s for s in r.stages}
+    print(f"v{version} trained through {r.trained_through}: call-start Brier {cs['call_start'].brier_model:.4f} "
+          f"vs price {cs['call_start'].brier_price:.4f}, k {cs['call_start'].k_final:.3f} / "
+          f"{cs['early_24h'].k_final:.3f}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="rmm")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -83,6 +112,10 @@ def main() -> None:
     cr.add_argument("--relations", help="saved cost_relations.sql results (JSON)")
     cr.add_argument("--no-api", action="store_true", help="skip the Neon API even if NEON_API_KEY is set")
     cr.set_defaults(fn=cmd_cost_report)
+    rf = sub.add_parser("refit", help="refit the four mentions models as a challenger (no database writes)")
+    rf.add_argument("--through", help="only calls on or before this date (YYYY-MM-DD)")
+    rf.add_argument("--input", help="v_model_training as CSV or JSON instead of querying Neon")
+    rf.set_defaults(fn=cmd_refit)
     a = ap.parse_args()
     a.fn(a)
 
