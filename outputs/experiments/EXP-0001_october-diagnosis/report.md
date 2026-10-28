@@ -71,6 +71,8 @@ market pricing in real pre-call news, not a data leak.
 
 ## What to decide (owner)
 
+> **Correction, Oct 28 (EXP-0002):** re-scored with the real trading rules and stakes, both rules below help over the last 30 days but hurt over the season (I-001 −19.7%, I-002 −23.9% of bankroll). Don't adopt them; they are scored daily in the Loss Review instead.
+
 These change how money is traded, so they are yours to approve:
 
 1. **Call start: skip NO trades that fade a late jump** (price up 0.3+ log-odds in the last 24h).

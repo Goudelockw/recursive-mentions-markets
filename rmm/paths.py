@@ -4,6 +4,7 @@ This module is the naming convention: nothing else builds an output path by hand
 so the Librarian can check the outputs/ tree against these same functions.
 
     outputs/trade-sheets/2026-10/2026-10-27_trade-sheet.md      daily
+    outputs/reviews/2026-10/2026-10-27_loss-review.md            daily
     outputs/weekly/2026-W44_weekly-review.md                    weekly
     outputs/models/v8_2026-11-01/fit-report.md                  per fit
     outputs/experiments/EXP-0007_news-volume/report.md          per experiment
@@ -26,6 +27,10 @@ WEEKLY_NAME = re.compile(r"^\d{4}-W\d{2}_[a-z0-9]+(-[a-z0-9]+)*\.[a-z]+$")
 
 def trade_sheet(day: date, ext: str) -> Path:
     return OUTPUTS / "trade-sheets" / f"{day:%Y-%m}" / f"{day:%Y-%m-%d}_trade-sheet.{ext}"
+
+
+def loss_review(day: date) -> Path:
+    return OUTPUTS / "reviews" / f"{day:%Y-%m}" / f"{day:%Y-%m-%d}_loss-review.md"
 
 
 def weekly(day: date, kind: str, ext: str = "md") -> Path:

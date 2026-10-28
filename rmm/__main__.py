@@ -27,6 +27,8 @@
                                                  writes ops.* and queues allowed fixes, --refit stores a
                                                  challenger (both rmm_rw)
   python -m rmm weekly-review [--page]           the Weekly Review page (checks, fixes, proposals, results)
+  python -m rmm loss-review [--date YYYY-MM-DD]  grade yesterday's trades, slice the losses, score the test ideas
+                                                 in shadow; writes outputs/reviews/YYYY-MM/YYYY-MM-DD_loss-review.md
   python -m rmm librarian [--apply] [--no-db]    tidy check: naming, 90-day archive, docs that no longer
                                                  match the code or database, leftover tables; --apply
                                                  moves files (git mv) and writes the librarian log
@@ -182,6 +184,19 @@ def cmd_weekly_review(a: argparse.Namespace) -> None:
         print(f"wrote {md.relative_to(paths.ROOT)} and {page.relative_to(paths.ROOT)}")
 
 
+def cmd_loss_review(a: argparse.Namespace) -> None:
+    from datetime import timedelta
+    from . import loss_review
+    day = date.fromisoformat(a.date) if a.date else datetime.now(ET).date() - timedelta(days=1)
+    rows = db.load_rows(Path(a.rows)) if a.rows else db.run_query(paths.query("loss_review"))
+    r = loss_review.build(rows, day)
+    out = paths.loss_review(day)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(loss_review.render_md(r))
+    print(f"wrote {out.relative_to(paths.ROOT)}")
+    print(loss_review.headline(r))
+
+
 def cmd_librarian(a: argparse.Namespace) -> None:
     from . import librarian
     today = date.fromisoformat(a.date) if a.date else datetime.now(ET).date()
@@ -232,6 +247,10 @@ def main() -> None:
     md = sub.add_parser("models", help="list model versions and which one is live")
     md.add_argument("--page", action="store_true", help="also write outputs/models/index.html and README.md")
     md.set_defaults(fn=cmd_models)
+    lr = sub.add_parser("loss-review", help="grade yesterday's trades and score the test ideas")
+    lr.add_argument("--date", help="the day to review, default yesterday in New York")
+    lr.add_argument("--rows", help="saved loss_review.sql results (JSON) instead of querying Neon")
+    lr.set_defaults(fn=cmd_loss_review)
     lb = sub.add_parser("librarian", help="naming, archive, docs and leftover-table check")
     lb.add_argument("--apply", action="store_true", help="move files (git mv) and write the librarian log")
     lb.add_argument("--no-db", action="store_true", help="file checks only")

@@ -36,6 +36,7 @@ DOCS = ["README.md", "SYSTEM.md", "PLAN.md", "agents/README.md", *sorted(str(p.r
 REPO_DIRS = ("rmm/", "sql/", "agents/", "outputs/", "docs/", "tests/")
 PLACEHOLDER = re.compile(r"YYYY|Www|<|\*|\{|vN|EXP-NNNN|\.\.\.|…")
 TRADE_SHEET = re.compile(r"^(\d{4}-\d{2})-\d{2}_trade-sheet\.(md|csv|html)$")
+LOSS_REVIEW = re.compile(r"^(\d{4}-\d{2})-\d{2}_loss-review\.md$")
 MODEL_DIR = re.compile(r"^v(\d+)_(\d{4}-\d{2}-\d{2})$")
 EXPERIMENT_DIR = re.compile(r"^EXP-\d{4}_[a-z0-9]+(-[a-z0-9]+)*$")
 
@@ -97,6 +98,17 @@ def check_outputs(r: Report, live_versions: set[int] | None) -> None:
                 r.moves.append(Move(p, out / "archive" / "trade-sheets" / m.group(1) / p.name, f"over {ARCHIVE_DAYS} days old"))
             elif p != home:
                 r.moves.append(Move(p, home, f"belongs in trade-sheets/{m.group(1)}/"))
+        elif area == "reviews":
+            m = LOSS_REVIEW.match(p.name)
+            if not m:
+                r.misnamed.append((_rel(p), "reviews are YYYY-MM-DD_loss-review.md"))
+                continue
+            day = date.fromisoformat(p.name[:10])
+            home = out / "reviews" / m.group(1) / p.name
+            if day < cutoff:
+                r.moves.append(Move(p, out / "archive" / "reviews" / m.group(1) / p.name, f"over {ARCHIVE_DAYS} days old"))
+            elif p != home:
+                r.moves.append(Move(p, home, f"belongs in reviews/{m.group(1)}/"))
         elif area == "weekly":
             if len(parts) != 2 or not paths.WEEKLY_NAME.match(p.name):
                 r.misnamed.append((_rel(p), "weekly files are YYYY-Www_<kind>.<ext>, directly in weekly/"))

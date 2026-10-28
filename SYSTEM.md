@@ -282,7 +282,7 @@ The first source that applies wins:
 - **Exec-change check:** CEO/CFO changes from SEC filings into `exec_tenures`.
 
 From `recursive-mentions-markets` (instructions in `agents/<task>/PROMPT.md`, read-only on Neon):
-- **Weekdays, 6:41am ET, Trade Sheet:** the day's trades and where they sit in the risk model.
+- **Weekdays, 6:41am ET, Trade Sheet:** the day's trades and where they sit in the risk model, then the Loss Review: yesterday's graded trades, where the losses came from, and the test ideas (`rmm/loss_review.py` `IDEAS`) scored in shadow.
 - **Sundays, 8:41pm ET, Cost Report:** what Neon cost this week and what to change.
 - **Sundays, 9:41pm ET, Ops:** after `research-weekly`; investigates warnings, drafts fixes for approval, publishes the Weekly Review.
 - **Sundays, 10:11pm ET, Model Review:** the week's challenger vs. the live model, sent before anything is promoted.

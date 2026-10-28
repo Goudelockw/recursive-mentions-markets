@@ -9,7 +9,7 @@ task's own prompt only says to follow it.
 - **Read only** on Neon. Never write to any table, never refresh views, never run a backfill.
   Problems go in the sheet's *Needs you* section; the Sunday Ops task fixes them.
 - Never place, change or cancel orders. Never change stakes, rules or overrides.
-- May commit only files under `outputs/trade-sheets/`.
+- May commit only files under `outputs/trade-sheets/` and `outputs/reviews/`.
 
 ## Steps
 
@@ -31,11 +31,15 @@ task's own prompt only says to follow it.
    with the message `trade sheet YYYY-MM-DD: <status line>` and push to `main`. If the push is refused,
    don't retry: the page is already up, so keep the sheet's status and add one line to the message,
    `Not saved to GitHub: <error>`.
-5. End with this message and nothing else (it becomes the notification):
+5. Loss review: `python -m rmm loss-review` (yesterday's graded trades, where the losses came from,
+   and the test ideas scored in shadow). Commit `outputs/reviews/YYYY-MM/YYYY-MM-DD_loss-review.md`
+   with the message `loss review YYYY-MM-DD: <its headline>` and push to `main`.
+6. End with this message and nothing else (it becomes the notification):
 
    ```
    <STATUS> · <headline from the command's last line>
    <each "Needs you" bullet from the .md, one line each, or "Nothing needs you.">
+   Yesterday: <the loss review headline>
    <the Trade Sheet page URL>
    ```
 

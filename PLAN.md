@@ -54,6 +54,10 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] **Look into October** (`outputs/experiments/EXP-0001_october-diagnosis/report.md`): news-driven words started getting said far more (28.5% → 39.8% at 24h) and the model kept fading them; at call start, fading late price jumps lost −27¢/trade. Found and fixed two silent pipeline gaps (daily news never ran; no 1-minute candles since Sep 25) and added checks for both
 - [ ] **Decide** (owner): skip call-start NO trades that fade a late jump; halve NO stakes on external words until a news feature exists
 - [ ] **Test news volume as a feature** for external words once the news backfill lands. Phase 4
+- [x] EXP-0002 cross-company word history and industry: no gain as model terms; sector offsets help Sep–Oct but not over the full history (mispriced sectors shift). Shadow-score
+- [x] Daily Loss Review (`python -m rmm loss-review`, in the weekday Trade Sheet run): yesterday's trades, loss slices, test ideas I-001…I-003 scored in shadow
+- [ ] Retracted: EXP-0001's two rules hurt over the season under the real trading rules (I-001 −19.7%, I-002 −23.9% of bankroll). Keep them in shadow; don't adopt
+- [ ] Shadow-score walk-forward sector offsets (EXP-0002) as a model challenger
 - [x] Fixed: live Brier and calibration graded on `result = 'YES'` (`won` in `v_mentions_history` means the trade won)
 
 ## Phase 3 · Sunday batch

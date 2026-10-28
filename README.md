@@ -12,7 +12,7 @@ What is done and what is next is in [`PLAN.md`](PLAN.md). How the whole system w
 
 | When | What | Who | Output |
 |---|---|---|---|
-| Weekdays 06:41 | Trade Sheet | Claude scheduled task, runs `python -m rmm trade-sheet` | `outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`, the pinned Trade Sheet page, push + email |
+| Weekdays 06:41 | Trade Sheet, then the Loss Review of yesterday's trades | Claude scheduled task, runs `python -m rmm trade-sheet` and `python -m rmm loss-review` | `outputs/trade-sheets/YYYY-MM/YYYY-MM-DD_trade-sheet.{md,csv,html}`, `outputs/reviews/YYYY-MM/YYYY-MM-DD_loss-review.md`, the Trade Sheet page, push |
 | Sunday 20:41 | Cost Report: what Neon costs, which jobs drive it, what to change | Claude scheduled task, runs `python -m rmm cost-report` | `outputs/weekly/YYYY-Www_cost-report.md`, `outputs/costs/neon-usage.csv`, push |
 | Sunday ~21:00 (Mon 01:00 UTC) | Weekly checks, live grading, calibration, challenger refit | Railway `research-weekly`: `python -m rmm weekly --save --refit` | `ops.*` tables, a challenger in `kalshi.model_versions` |
 | Sunday 21:41 | Ops: fix data gaps, write the Weekly Review | Claude scheduled task | `outputs/weekly/YYYY-Www_weekly-review.{md,html}`, the Weekly Review page, push |
@@ -38,12 +38,15 @@ rmm/                 Python package (python -m rmm <command>)
   models_page.py     the Models page
   weekly.py          weekly health checks, live grading, calibration, the fix queue
   weekly_review.py   the Weekly Review page
+  loss_review.py     daily loss review and the test ideas scored in shadow
+  sectors.py         company sectors from SIC codes
   librarian.py       naming, archive, docs and leftover-table checks
 sql/queries/         the read-only queries the code and the scheduled tasks run
 sql/migrations/      numbered schema changes (applied by hand, in order)
 agents/<task>/       one folder per scheduled task: its prompt and its permissions
 outputs/             everything the system produces, dated, committed
   trade-sheets/YYYY-MM/
+  reviews/YYYY-MM/   daily loss reviews
   weekly/
   models/vN_YYYY-MM-DD/
   experiments/EXP-NNNN_<slug>/
@@ -77,6 +80,7 @@ python -m rmm models [--page]         # model versions; --page writes the Models
                                       # promote with: select kalshi.promote_model(N);  (owner only)
 python -m rmm weekly [--save]         # health checks, live grading, calibration; --save queues fixes
 python -m rmm weekly-review [--page]  # the Weekly Review page
+python -m rmm loss-review            # yesterday's trades, where losses came from, test ideas in shadow
 python -m rmm librarian [--apply]     # tidy check; --apply moves files and writes the log
 
 python -m unittest discover tests
