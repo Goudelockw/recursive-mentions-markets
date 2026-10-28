@@ -29,8 +29,8 @@ select
   round(extract(epoch from now() - m.updated_at) / 3600.0, 1)  as quote_age_h,
   exists (select 1 from kalshi.word_valence v where v.ticker = b.ticker)   as has_valence,
   exists (select 1 from kalshi.word_incentive i where i.ticker = b.ticker) as has_incentive,
-  exists (select 1 from kalshi.call_time_overrides o
-          where o.event_ticker = b.event_ticker)                as call_time_override
+  (exists (select 1 from kalshi.call_time_overrides o where o.event_ticker = b.event_ticker)
+   or b.call_start_source = 'calendar (IR confirmed)')          as call_time_override
 from b
 left join kalshi.v_model_scores_open s using (ticker)
 left join kalshi.markets m using (ticker)
