@@ -96,5 +96,6 @@ What each idea would have changed, in % of bankroll (positive = it would have he
 | **I-002** Halve the stake on NO trades on external (news) words (EXP-0001) | half | +1.41% (4) | +10.07% (131) | -21.93% (613) | -96.79% (1362) |
 | **I-003** Skip NO trades on external words in Banks, Telecom & media, Autos, Aerospace (picked after the fact) (EXP-0002) | skip | +2.00% (1) | +31.64% (81) | +22.33% (183) | +8.89% (393) |
 | **I-004** Skip NO trades on external words with 2+ alternatives ("Iran / Middle East") (EXP-0003) | skip | +3.62% (3) | +25.40% (48) | +10.12% (173) | -1.27% (269) |
+| **I-005** I-004, but only plain TRADE (keep TRADE+, where the risk model agrees) (EXP-0004) | skip | +1.62% (2) | +25.60% (40) | +15.89% (154) | +16.52% (236) |
 
 In brackets: trades the idea touches in that window.

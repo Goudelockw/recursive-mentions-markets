@@ -51,6 +51,8 @@ IDEAS = [
          & d.sector.isin(["Banks & finance", "Telecom & media", "Autos & machinery", "Aerospace & defense"])),
     Idea("I-004", "Skip NO trades on external words with 2+ alternatives (\"Iran / Middle East\")", "EXP-0003", "skip",
          lambda d: (d.side == "NO") & (d.scope == "external") & (d.alternatives >= 2)),
+    Idea("I-005", "I-004, but only plain TRADE (keep TRADE+, where the risk model agrees)", "EXP-0004", "skip",
+         lambda d: (d.side == "NO") & (d.scope == "external") & (d.alternatives >= 2) & (d.action == "TRADE")),
 ]
 
 
