@@ -35,7 +35,7 @@ class Idea:
     id: str
     title: str
     source: str
-    effect: str                                   # skip | half
+    effect: str                                   # skip | half | 1.5x
     applies: Callable[[pd.DataFrame], pd.Series]
 
 
@@ -53,6 +53,10 @@ IDEAS = [
          lambda d: (d.side == "NO") & (d.scope == "external") & (d.alternatives >= 2)),
     Idea("I-005", "I-004, but only plain TRADE (keep TRADE+, where the risk model agrees)", "EXP-0004", "skip",
          lambda d: (d.side == "NO") & (d.scope == "external") & (d.alternatives >= 2) & (d.action == "TRADE")),
+    Idea("I-006", "Halve the stake on plain TRADE (keep TRADE+ as is)", "EXP-0004", "half",
+         lambda d: d.action == "TRADE"),
+    Idea("I-007", "Give TRADE+ the documented 1.5x stake (it averages 1.03% vs 1.08% for TRADE)", "EXP-0004", "1.5x",
+         lambda d: d.action == "TRADE+"),
 ]
 
 
@@ -113,7 +117,8 @@ def idea_effect(w: pd.DataFrame, idea: Idea) -> dict:
         return {"affected": 0, "c_trade": None, "delta_ret": 0.0}
     m = idea.applies(w).fillna(False).astype(bool)
     hit = w[m]
-    delta = -hit["ret_pct"].sum() if idea.effect == "skip" else -0.5 * hit["ret_pct"].sum()
+    share = {"skip": -1.0, "half": -0.5, "1.5x": 0.5}[idea.effect]
+    delta = share * hit["ret_pct"].sum()
     return {"affected": int(m.sum()), "c_trade": float(hit["pnl_c"].mean()) if len(hit) else None, "delta_ret": float(delta)}
 
 

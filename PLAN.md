@@ -63,6 +63,8 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] Multi-word markets ("Iran / Middle East"): as a model term, no gain (market already prices them). In real trades, NO bets on them are ~breakeven over all history and lost −23% of bankroll in the last 30 days. Shadow idea **I-004** (skip external NO on 2+ alternatives): +25.4% last 30 days, +10.1% season, −1.3% all history
 - [x] EXP-0004: the risk model adds real information beyond price and model (AVOID −0.46 log-odds, holds in Sep–Oct) and TRADE+ held up this autumn (+14.4¢). Multi-word rule belongs in the trading rules, not the model: I-005 (I-004 limited to plain TRADE)
 - [ ] **Decide** (owner): adopt I-005 as a trading rule in `kalshi.mentions_action()`
+- [ ] **Fix sizing**: TRADE+ should get 1.5× stake (SYSTEM.md 2.5) but averages 1.03% vs 1.08% for TRADE. I-007 (actually 1.5×): +118.6% all history, +45.3% season
+- [ ] Extend the risk model beyond favorites 50–98¢: avoid markers for multi-word, outside-topic, late-jump and underdog trades
 - [ ] Re-test `story0` on forward-labeled markets only (~1,500 needed, about two months): its sign flips on labels made before the call
 - [x] Fixed: live Brier and calibration graded on `result = 'YES'` (`won` in `v_mentions_history` means the trade won)
 

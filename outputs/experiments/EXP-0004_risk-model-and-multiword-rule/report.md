@@ -55,3 +55,17 @@ about −740¢.
   history. It's a bet that this autumn's pattern continues. It would have cost about 12.5% before
   September and saved 29% since. It's cheap to reverse, and the daily Loss Review shows its running
   score.
+
+## 4. What it means for the trading strategy
+
+- **The edge is two views agreeing.** TRADE+ (the model fades a favorite the risk model marks AVOID) is 22% of
+  trades and about 43% of the profit. It's positive at every edge size in both periods. Plain TRADE was positive
+  at every edge size before September (+3.6¢ to +11.5¢, rising with edge) and negative at every edge size in
+  Sep–Oct, so a higher edge bar wouldn't have saved it.
+- **Sizing is backwards.** SYSTEM.md says TRADE+ gets 1.5× stake, but in the backtest it averages 1.03% of
+  bankroll against 1.08% for plain TRADE (median 0.94% vs 1.00%), and only 8% of TRADE+ trades hit the 2% cap.
+  Giving TRADE+ 1.5× (I-007) is +118.6% of bankroll over all history, +45.3% over the season and +6.6% over 30 days.
+- **Don't shrink plain TRADE.** Halving it (I-006) is +13.0% over 30 days but −27.6% over the season and −93.3%
+  over all history.
+- **The risk model only covers favorites priced 50–98¢.** Most plain TRADE trades fall where it has no view. New
+  avoid markers (multi-word, outside topic, late price jumps, underdogs) are the most valuable research to do next.
