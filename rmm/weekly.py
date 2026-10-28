@@ -19,6 +19,8 @@ from . import db
 
 # job -> hours without a successful run before it counts as stale (filings and news skip weekends)
 JOB_LIMITS = {"sync": 3, "reconcile": 30, "transcripts": 30, "filings": 72, "news": 72}
+# jobs that always write rows in a normal week; a week of successful runs writing nothing is a silent failure
+WRITES_EVERY_WEEK = ("sync", "reconcile", "transcripts", "filings", "news", "reactions")
 LOW_CONF_CALL_TIME = "source like '%default%' or source like '%(1 past calls)%'"
 
 
@@ -135,6 +137,23 @@ def run_checks() -> list[Check]:
         lambda r: f"{_int(r['n'])} scores logged this week (last {r['days']} days ago)",
         lambda r: _int(r["n"]) == 0))
     checks.append(check_simple(
+        "jobs_writing_nothing",
+        f"""select count(*) as n, string_agg(job, ', ' order by job) as list from (
+              select job from kalshi.ingest_runs where started_at > now() - interval '7 days' and ok
+                and job in ({", ".join(f"'{j}'" for j in WRITES_EVERY_WEEK)})
+              group by job having coalesce(sum(rows_written), 0) = 0) t""",
+        lambda r: f"{_int(r['n'])} jobs ran fine all week but wrote nothing" + (f": {r['list']}" if _int(r['n']) else ""),
+        lambda r: _int(r["n"]) > 0))
+    checks.append(check_simple(
+        "call_start_without_first_lock_14d",
+        f"""select count(*) filter (where first_lock is null) as n, count(*) as calls,
+                   string_agg(symbol, ', ' order by closed_at) filter (where first_lock is null) as list
+            from kalshi.mv_call_times
+            where closed_at > now() - interval '14 days' and release_at is not null""",
+        lambda r: f"{_int(r['n'])} of {_int(r.get('calls'))} settled calls in 14 days have no 1-minute lock time, so their "
+                  "call start is an estimate" + (f": {r['list'][:300]}" if _int(r['n']) else ""),
+        lambda r: _int(r["n"]) >= 3 and _int(r["n"]) > 0.25 * _int(r.get("calls"))))
+    checks.append(check_simple(
         "live_model_age",
         """select (current_date - trained_through) as n, version from kalshi.model_versions where status = 'live'""",
         lambda r: f"live model v{r.get('version')} trained through {_int(r.get('n'))} days ago",
@@ -220,6 +239,10 @@ FIX_RULES = [
     ("check_date_calls", "The estimated call time passed with no release found: re-fetch that company's filings",
      """select distinct 'filings' as command, array['--backfill-symbol', symbol] as args
         from kalshi.v_mentions_board where action = 'CHECK DATE'"""),
+    ("call_start_without_first_lock_14d", "Settled calls without 1-minute candles: fetch them around each release",
+     """select 'reactions' as command, array['--days', '14'] as args
+        where (select count(*) filter (where first_lock is null) from kalshi.mv_call_times
+               where closed_at > now() - interval '14 days' and release_at is not null) >= 3"""),
     ("settlement_lag", "Markets closed 3+ days ago without a result: re-fetch them",
      """select 'sweep' as command, array[]::text[] as args
         where exists (select 1 from kalshi.markets where close_time < now() - interval '3 days'

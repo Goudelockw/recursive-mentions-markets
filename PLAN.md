@@ -51,7 +51,9 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] Model Review task (Sundays 22:11 ET): sends the release to you before anything is promoted
 - [x] Leading into the call: model vs. market from 14 days to call start (`rmm/horizons.py`, line charts on the Models page)
 - [ ] **Test an earlier entry window**: the model's edge over the market is widest 7–14 days out and ¢/trade peaks 2–3 days out (+6.0–6.1¢ vs +5.6¢ at 24h). Check liquidity and spreads that far out before changing ENTRY 1. Phase 4
-- [ ] **Look into October**: on the 402 markets since Oct 9, both v1 and v2 trail the market price at call start (Brier 0.162 vs 0.1595, about −5¢ per trade). First item for the phase 4 research loop
+- [x] **Look into October** (`outputs/experiments/EXP-0001_october-diagnosis/report.md`): news-driven words started getting said far more (28.5% → 39.8% at 24h) and the model kept fading them; at call start, fading late price jumps lost −27¢/trade. Found and fixed two silent pipeline gaps (daily news never ran; no 1-minute candles since Sep 25) and added checks for both
+- [ ] **Decide** (owner): skip call-start NO trades that fade a late jump; halve NO stakes on external words until a news feature exists
+- [ ] **Test news volume as a feature** for external words once the news backfill lands. Phase 4
 - [x] Fixed: live Brier and calibration graded on `result = 'YES'` (`won` in `v_mentions_history` means the trade won)
 
 ## Phase 3 · Sunday batch
