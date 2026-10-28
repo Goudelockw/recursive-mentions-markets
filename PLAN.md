@@ -75,7 +75,7 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [x] Weekly Review page (`python -m rmm weekly-review --page`)
 - [x] Librarian task (Sundays 22:41 ET) and `python -m rmm librarian`: naming rules, 90-day archive, docs checked against the code, database and Railway job runs, leftover tables as PR-tier migrations, the librarian log
 - [ ] Daily labeling for markets listed mid-week (SYSTEM.md open item)
-- [ ] Release-window fix for wrong ticker dates (SYSTEM.md open item)
+- [x] Release-window fix for wrong ticker dates, and the board now uses IR-confirmed call times from the calendar sync (migration 006)
 
 ## Phase 4 · Research loop
 

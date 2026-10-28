@@ -337,7 +337,7 @@ transaction, so the board picks it up right away. Roles: `rmm_ro` reads (Trade S
 | **Refresh release features when an 8-K lands** | In the same PR. Until then, release features for the call-start model refresh on the next refresh chain |
 | **Grafana board** | 12 panel queries in `grafana_mentions_board.sql`; set up the panels |
 | **Daily labeling for markets listed mid-week** | Weekly labeling misses markets with a call in under 3 days |
-| **Release window on call times** | `release_at` only looks at the Kalshi event date ± 1 day, so a wrong ticker date also hides the release |
+| **Release window on call times** | Fixed Oct 28 (migration 006): upcoming calls use IR-confirmed times from `call_calendar`, and the release is looked for around that date |
 | **News volume** | Collected going forward only. Test it after a full season |
 | **Rotate the Neon password** | It was shared in chat earlier |
 
