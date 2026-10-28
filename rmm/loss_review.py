@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Callable
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -47,7 +49,14 @@ IDEAS = [
     Idea("I-003", "Skip NO trades on external words in Banks, Telecom & media, Autos, Aerospace (picked after the fact)",
          "EXP-0002", "skip", lambda d: (d.side == "NO") & (d.scope == "external")
          & d.sector.isin(["Banks & finance", "Telecom & media", "Autos & machinery", "Aerospace & defense"])),
+    Idea("I-004", "Skip NO trades on external words with 2+ alternatives (\"Iran / Middle East\")", "EXP-0003", "skip",
+         lambda d: (d.side == "NO") & (d.scope == "external") & (d.alternatives >= 2)),
 ]
+
+
+def alternatives(word: str) -> int:
+    """How many words count for the market: "Iran / Middle East" is 2. Qualifiers like "(2+ times)" don't count."""
+    return len([w for w in re.sub(r"\(.*?\)", "", str(word)).split("/") if w.strip()])
 
 
 @dataclass
@@ -68,6 +77,7 @@ def prepare(rows: list[dict]) -> pd.DataFrame:
     d["scope"] = np.where(d["word_scope"] == "external", "external", np.where(d["word_scope"].isna(), "unlabeled", "own business"))
     d["sector"] = [sectors.sector(s, sic) for s, sic in zip(d["symbol"], d["sic"])]
     d["late_jump"] = (d["stage"] == "call_start") & (d["move_24h"] > JUMP)
+    d["alternatives"] = d["word"].map(alternatives)
     d["entry"] = d["stage"].map({"early_24h": "24h before", "call_start": "call start"})
     return d
 
@@ -155,7 +165,9 @@ def render_md(r: Review) -> str:
     w30 = r.windows["last 30 days"]
     out += ["", "## Where the last 30 days' losses came from", "",
             "Each table is sorted worst first. A slice that keeps showing up at the top is a candidate idea.", ""]
-    for by, label in (("entry", "Entry"), ("side", "Side"), ("scope", "Word scope"), ("late_jump", "Late jump (call start)"),
+    w30 = w30.assign(words=np.where(w30["alternatives"] >= 2, "2+ alternatives", "1 word"))
+    for by, label in (("entry", "Entry"), ("side", "Side"), ("scope", "Word scope"), ("words", "Words in the market"),
+                      ("late_jump", "Late jump (call start)"),
                       ("avoid_tier", "Risk tier"), ("sector", "Sector")):
         out += [f"### {label}", ""] + _table(slices(w30, by), label) + [""]
     out += ["## Test ideas, scored in shadow", "",

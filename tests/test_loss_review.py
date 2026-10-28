@@ -37,6 +37,11 @@ class LossReviewTest(unittest.TestCase):
         r = loss_review.build([], date(2026, 10, 27))
         self.assertIn("No graded trades", loss_review.render_md(r))
 
+    def test_alternatives(self):
+        self.assertEqual(loss_review.alternatives("Iran / Middle East"), 2)
+        self.assertEqual(loss_review.alternatives("Coffee (2+ times)"), 1)
+        self.assertEqual(loss_review.alternatives("Generative AI / Gen-AI / Gen AI"), 3)
+
     def test_sectors(self):
         self.assertEqual(sectors.sector("V", "7389"), "Payments & fintech")
         self.assertEqual(sectors.sector("KO", "2080"), "Consumer goods")

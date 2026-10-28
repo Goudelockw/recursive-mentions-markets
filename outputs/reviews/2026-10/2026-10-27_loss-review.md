@@ -1,15 +1,15 @@
 # Loss review · Tue Oct 27, 2026
 
-Oct 27: 6 trades, 50% won, -3.7% of bankroll · last 30 days -6.9% on 234 trades
+Oct 27: 9 trades, 33% won, -9.7% of bankroll · last 30 days -12.9% on 237 trades
 
 ## Results
 
 | Window | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
-| day | 6 | 50% | -11.7 | -3.73% |
-| last 30 days | 234 | 57% | -1.2 | -6.91% |
-| season | 1374 | 67% | +5.4 | +151.85% |
-| all history | 3205 | 67% | +6.6 | +429.78% |
+| day | 9 | 33% | -31.2 | -9.73% |
+| last 30 days | 237 | 57% | -2.0 | -12.91% |
+| season | 1377 | 66% | +5.2 | +145.85% |
+| all history | 3208 | 67% | +6.5 | +423.78% |
 
 ## Biggest losses on Oct 27
 
@@ -17,6 +17,9 @@ Oct 27: 6 trades, 50% won, -3.7% of bankroll · last 30 days -6.9% on 234 trades
 |---|---|---|---|---|---|---|---|---|---|
 | BA | Starliner | call start | NO | 50¢ | 42% YES | own business | Aerospace & defense |  | -2.00% |
 | HLT | Competition | call start | NO | 42¢ | 48% YES | own business | Travel & leisure |  | -2.00% |
+| HOOD | Anthropic / Claude | call start | NO | 67¢ | 25% YES | external | Banks & finance |  | -2.00% |
+| V | Inyo | call start | NO | 79¢ | 16% YES | own business | Payments & fintech |  | -2.00% |
+| V | Regulation / Regulatory | call start | NO | 60¢ | 33% YES | external | Payments & fintech |  | -2.00% |
 | KO | Pibb | call start | NO | 54¢ | 41% YES | own business | Consumer goods |  | -1.43% |
 
 ## Where the last 30 days' losses came from
@@ -27,50 +30,57 @@ Each table is sorted worst first. A slice that keeps showing up at the top is a 
 
 | Entry | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
-| call start | 102 | 55% | -3.5 | -13.21% |
+| call start | 105 | 53% | -5.4 | -19.21% |
 | 24h before | 132 | 59% | +0.6 | +6.30% |
 
 ### Side
 
 | Side | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
-| NO | 202 | 56% | -1.4 | -5.83% |
+| NO | 205 | 56% | -2.4 | -11.83% |
 | YES | 32 | 62% | +0.2 | -1.08% |
 
 ### Word scope
 
 | Word scope | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
-| external | 135 | 54% | -5.3 | -15.13% |
-| own business | 99 | 62% | +4.5 | +8.22% |
+| external | 137 | 53% | -6.2 | -19.13% |
+| own business | 100 | 61% | +3.6 | +6.22% |
+
+### Words in the market
+
+| Words in the market | Trades | Won | ¢ / trade | Bankroll |
+|---|---|---|---|---|
+| 2+ alternatives | 64 | 45% | -15.1 | -22.96% |
+| 1 word | 173 | 61% | +2.8 | +10.05% |
 
 ### Late jump (call start)
 
 | Late jump (call start) | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
+| False | 226 | 58% | -1.3 | -7.95% |
 | True | 11 | 36% | -16.2 | -4.96% |
-| False | 223 | 58% | -0.4 | -1.95% |
 
 ### Risk tier
 
 | Risk tier | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
-| OK | 172 | 59% | -4.8 | -23.78% |
+| OK | 173 | 58% | -5.2 | -25.78% |
 | Thin history | 8 | 75% | +6.1 | +1.32% |
-| AVOID | 53 | 49% | +9.2 | +15.15% |
+| AVOID | 54 | 48% | +7.9 | +13.15% |
 
 ### Sector
 
 | Sector | Trades | Won | ¢ / trade | Bankroll |
 |---|---|---|---|---|
-| Banks & finance | 75 | 51% | -10.4 | -19.84% |
+| Banks & finance | 76 | 50% | -11.1 | -21.84% |
 | Aerospace & defense | 10 | 40% | -29.7 | -7.26% |
 | Semis & hardware | 5 | 40% | -23.5 | -4.70% |
+| Payments & fintech | 4 | 50% | -24.4 | -2.82% |
 | Healthcare | 12 | 33% | -10.6 | -2.38% |
 | Travel & leisure | 1 | 0% | -43.7 | -2.00% |
 | Telecom & media | 22 | 59% | -3.2 | -1.44% |
 | Software & internet | 17 | 65% | +1.0 | +0.86% |
-| Payments & fintech | 2 | 100% | +22.2 | +1.18% |
 | Autos & machinery | 16 | 69% | +13.9 | +4.42% |
 | Restaurants | 17 | 82% | +21.6 | +6.05% |
 | Transport | 28 | 61% | +9.9 | +7.53% |
@@ -83,7 +93,8 @@ What each idea would have changed, in % of bankroll (positive = it would have he
 | Idea | Effect | day | last 30 days | season | all history |
 |---|---|---|---|---|---|
 | **I-001** Call start: skip NO trades that bet against a late jump (price up 0.3+ log-odds since 24h) (EXP-0001) | skip | -0.38% (1) | +4.96% (11) | -19.69% (204) | -87.46% (433) |
-| **I-002** Halve the stake on NO trades on external (news) words (EXP-0001) | half | -0.59% (2) | +8.07% (129) | -23.93% (611) | -98.79% (1360) |
-| **I-003** Skip NO trades on external words in Banks, Telecom & media, Autos, Aerospace (model under-predicts them) (EXP-0002) | skip | – | +29.64% (80) | +20.33% (182) | +6.89% (392) |
+| **I-002** Halve the stake on NO trades on external (news) words (EXP-0001) | half | +1.41% (4) | +10.07% (131) | -21.93% (613) | -96.79% (1362) |
+| **I-003** Skip NO trades on external words in Banks, Telecom & media, Autos, Aerospace (picked after the fact) (EXP-0002) | skip | +2.00% (1) | +31.64% (81) | +22.33% (183) | +8.89% (393) |
+| **I-004** Skip NO trades on external words with 2+ alternatives ("Iran / Middle East") (EXP-0003) | skip | +3.62% (3) | +25.40% (48) | +10.12% (173) | -1.27% (269) |
 
 In brackets: trades the idea touches in that window.

@@ -59,7 +59,9 @@ changes are in [`docs/decisions/`](docs/decisions/). The visual version is
 - [ ] Retracted: EXP-0001's two rules hurt over the season under the real trading rules (I-001 −19.7%, I-002 −23.9% of bankroll). Keep them in shadow; don't adopt
 - [ ] Shadow-score walk-forward sector offsets (EXP-0002) as a model challenger
 - [x] EXP-0003 variable audit: challenger **v3** drops r4, corpus_rare, analysts_n, the year-ago pair, ext/politics and the fundamental copy of filing_said (review: Better, walk-forward 99–100%). Spec is explicit in `rmm/refit.py` (SPEC_R / SPEC_V3)
-- [ ] **Decide** (owner): promote v3
+- [ ] **Decide** (owner): promote v3. Recommendation: wait until its forward test has ~300 markets (one day / 66 so far)
+- [x] Multi-word markets ("Iran / Middle East"): as a model term, no gain (market already prices them). In real trades, NO bets on them are ~breakeven over all history and lost −23% of bankroll in the last 30 days. Shadow idea **I-004** (skip external NO on 2+ alternatives): +25.4% last 30 days, +10.1% season, −1.3% all history
+- [ ] **Decide** (owner): adopt I-004
 - [ ] Re-test `story0` on forward-labeled markets only (~1,500 needed, about two months): its sign flips on labels made before the call
 - [x] Fixed: live Brier and calibration graded on `result = 'YES'` (`won` in `v_mentions_history` means the trade won)
 

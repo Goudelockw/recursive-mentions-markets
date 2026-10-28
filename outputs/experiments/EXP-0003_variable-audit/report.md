@@ -80,3 +80,17 @@ before the call.
   every board score NULL on promotion.
 - `rmm/review.py`: a version is scored with its own terms, not the current spec's.
 - Challenger v3 saved and reviewed; the Models page is updated.
+
+## Follow-up: markets with several words ("Iran / Middle East")
+
+| Real NO trades on… | Trades | ¢ / trade | Bankroll, all history |
+|---|---|---|---|
+| External, single word | 1,093 | +8.7 | +192% |
+| External, 2+ alternatives | 269 | +3.7 | +1.3% |
+| Own business, single word | 1,347 | +6.8 | +197% |
+| Own business, 2+ alternatives | 185 | +0.5 | +13% |
+
+- External words with 2 alternatives are said 45% of the time. The market prices that right; the model says 39%.
+- As a model term ("2+ alternatives", and that x external) it doesn't help out of sample: better in only 2–6% of resamples.
+- As a trading rule it's promising. **I-004** (skip NO on external words with 2+ alternatives) is +25.4% of bankroll over the
+  last 30 days, +10.1% over the season and −1.3% over all history. It's scored daily in the Loss Review.
