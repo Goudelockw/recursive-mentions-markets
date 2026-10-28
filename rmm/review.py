@@ -53,8 +53,12 @@ def versions() -> list[dict]:
 # ---------------------------------------------------------------- scoring
 
 def score(co: pd.DataFrame, d: pd.DataFrame, stage: str) -> np.ndarray:
-    """P(YES) from frozen coefficients, built the way the walk-forward backtest builds it."""
-    Ff, Bf, pcol, (fname, cname) = refit.STAGES[stage]
+    """P(YES) from frozen coefficients, built the way the walk-forward backtest builds it. The terms
+    come from the version's own coefficients, so a version fitted under another spec scores as it was."""
+    _, _, pcol, (fname, cname) = refit.STAGES[stage]
+    skip = {"(Intercept)", "calibration_k"}
+    Ff = [t for t in co[co["model"] == fname]["term"] if t not in skip]
+    Bf = [t for t in co[co["model"] == cname]["term"] if t not in skip]
 
     def lin(model: str, x: pd.DataFrame, terms: list[str]) -> np.ndarray:
         c = co[co["model"] == model].set_index("term")["coef"]

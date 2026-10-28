@@ -35,7 +35,7 @@ class RRandomTest(unittest.TestCase):
 class RefitParityTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.r = refit.run(training())
+        cls.r = refit.run(training(), spec=refit.SPEC_R)
 
     def test_coefficients_match_r(self):
         want = pd.read_csv(FIX / "r_model_coefficients.csv")

@@ -31,17 +31,32 @@ MIN_TRAIN_CALLS = 60
 CAL_MIN = 500
 SEED = 2024
 
-BASE_TERMS = ["r4", "said_prev", "avg_count", "no_hist", "multi", "ext", "politics", "analyst_rate4",
-              "corpus_spike_z", "corpus_rare", "analysts_n", "said_yoy", "has_yoy", "peer_rate", "has_peer",
-              "val", "val_neutral", "val_strong", "inc", "story0"]
-F_FULL = BASE_TERMS + ["filing_said", "rel_head"]
-F_EARLY = BASE_TERMS
-B_FULL = ["lp", "lA", "move24", "has24", "filing_said", "inc"]
-B_EARLY = ["lp24", "lA", "inc"]
-STAGES = {  # stage -> (fundamental terms, combined terms, price column, model names)
-    "call_start": (F_FULL, B_FULL, "lp", ("fundamental", "combined")),
-    "early_24h": (F_EARLY, B_EARLY, "lp24", ("fundamental_early", "combined_early")),
-}
+# The terms of each model. SPEC_R is refit_models.R's (v1, v2; tests/test_refit_parity.py checks it
+# against R). SPEC_V3 drops eight terms that the drop-one ablation (EXP-0003) found add nothing or hurt
+# out of sample: r4 (duplicates said_prev / avg_count), corpus_rare, analysts_n, the year-ago pair,
+# ext / politics, and filing_said in the call-start fundamental model (it stays in the combined one).
+R_BASE_TERMS = ["r4", "said_prev", "avg_count", "no_hist", "multi", "ext", "politics", "analyst_rate4",
+                "corpus_spike_z", "corpus_rare", "analysts_n", "said_yoy", "has_yoy", "peer_rate", "has_peer",
+                "val", "val_neutral", "val_strong", "inc", "story0"]
+SPEC_R = {"F_FULL": R_BASE_TERMS + ["filing_said", "rel_head"], "F_EARLY": R_BASE_TERMS,
+          "B_FULL": ["lp", "lA", "move24", "has24", "filing_said", "inc"], "B_EARLY": ["lp24", "lA", "inc"]}
+DROPPED_V3 = ["r4", "corpus_rare", "analysts_n", "said_yoy", "has_yoy", "ext", "politics"]
+_V3_BASE = [t for t in R_BASE_TERMS if t not in DROPPED_V3]
+SPEC_V3 = {"F_FULL": _V3_BASE + ["rel_head"], "F_EARLY": _V3_BASE,
+           "B_FULL": SPEC_R["B_FULL"], "B_EARLY": SPEC_R["B_EARLY"]}
+SPEC = SPEC_V3                     # what `rmm refit` and the weekly refit fit now
+MODEL_TERMS = {"fundamental": "F_FULL", "fundamental_early": "F_EARLY", "combined": "B_FULL", "combined_early": "B_EARLY"}
+
+BASE_TERMS, F_FULL, F_EARLY, B_FULL, B_EARLY = _V3_BASE, SPEC["F_FULL"], SPEC["F_EARLY"], SPEC["B_FULL"], SPEC["B_EARLY"]
+
+
+def stages(spec: dict = SPEC) -> dict:
+    """stage -> (fundamental terms, combined terms, price column, model names)"""
+    return {"call_start": (spec["F_FULL"], spec["B_FULL"], "lp", ("fundamental", "combined")),
+            "early_24h": (spec["F_EARLY"], spec["B_EARLY"], "lp24", ("fundamental_early", "combined_early"))}
+
+
+STAGES = stages(SPEC)
 
 
 def clip(p):
@@ -52,7 +67,7 @@ def prepare(rows: list[dict] | pd.DataFrame) -> pd.DataFrame:
     d = pd.DataFrame(rows).copy()
     if "call_date" not in d and "call_date_est" in d:
         d["call_date"] = d["call_date_est"]
-    for c in set(F_FULL + ["won", "bid", "ask", "lp", "lp24", "move24_raw"]) & set(d.columns):
+    for c in set(SPEC_R["F_FULL"] + ["won", "bid", "ask", "lp", "lp24", "move24_raw"]) & set(d.columns):
         d[c] = pd.to_numeric(d[c], errors="coerce")
     d["call_date"] = pd.to_datetime(d["call_date"], errors="coerce")
     d = d[d["call_date"].notna()].sort_values(["call_date", "ticker"]).reset_index(drop=True)
@@ -125,9 +140,9 @@ class StageResult:
     months: int
 
 
-def walk_forward(d: pd.DataFrame, stage: str) -> StageResult:
+def walk_forward(d: pd.DataFrame, stage: str, spec: dict = SPEC) -> StageResult:
     """Each month scored by models trained only on earlier months."""
-    Ff, Bf, pcol, _ = STAGES[stage]
+    Ff, Bf, pcol, _ = stages(spec)[stage]
     return walk_forward_spec(d, Ff, Bf, pcol, stage)
 
 
@@ -170,8 +185,10 @@ def walk_forward_spec(d: pd.DataFrame, Ff: list[str], Bf: list[str], pcol: str, 
                        float(np.mean((pr - won) ** 2)), months)
 
 
-def final_fit(d: pd.DataFrame, k: dict[str, float]) -> pd.DataFrame:
-    """Coefficients for all four models on every row, plus calibration_k, in model_coefficients' shape."""
+def final_fit(d: pd.DataFrame, k: dict[str, float], spec: dict = SPEC) -> pd.DataFrame:
+    """Coefficients for all four models on every row, plus calibration_k, in model_coefficients' shape.
+    Terms of SPEC_R that this spec leaves out are stored with coefficient 0 (no se / p-value), because the
+    board's SQL (v_model_fundamental, v_model_scores_open) multiplies every one of them by name."""
     out = []
 
     def add(model: str, f: Fit) -> None:
@@ -179,14 +196,17 @@ def final_fit(d: pd.DataFrame, k: dict[str, float]) -> pd.DataFrame:
                     "se": float(f.se[t]), "p_value": float(f.p_value[t]), "sd": float(f.sd[t])}
                    for t, v in f.params.items())
 
-    add("fundamental", fit(F_FULL, d))
-    add("fundamental_early", fit(F_EARLY, d))
+    add("fundamental", fit(spec["F_FULL"], d))
+    add("fundamental_early", fit(spec["F_EARLY"], d))
     x = d.copy()
-    x["lA"] = oof(F_FULL, x)
-    add("combined", fit(B_FULL, x))
+    x["lA"] = oof(spec["F_FULL"], x)
+    add("combined", fit(spec["B_FULL"], x))
     x = d[d["lp24"].notna()].copy()
-    x["lA"] = oof(F_EARLY, x)
-    add("combined_early", fit(B_EARLY, x))
+    x["lA"] = oof(spec["F_EARLY"], x)
+    add("combined_early", fit(spec["B_EARLY"], x))
+    for model, key in MODEL_TERMS.items():
+        out += [{"model": model, "term": t, "coef": 0.0, "se": None, "p_value": None, "sd": None}
+                for t in SPEC_R[key] if t not in spec[key]]
     out += [{"model": "combined", "term": "calibration_k", "coef": round(k["call_start"], 3)},
             {"model": "combined_early", "term": "calibration_k", "coef": round(k["early_24h"], 3)}]
     co = pd.DataFrame(out)
@@ -206,13 +226,13 @@ class Refit:
         return pd.concat([s.backtest[["ticker", "stage", "p_model"]] for s in self.stages], ignore_index=True)
 
 
-def run(rows, through: str | None = None) -> Refit:
+def run(rows, through: str | None = None, spec: dict = SPEC) -> Refit:
     d = prepare(rows)
     if through:
         d = d[d["call_date"] <= pd.Timestamp(through)].reset_index(drop=True)
-    stages = [walk_forward(d, s) for s in STAGES]
-    co = final_fit(d, {s.stage: s.k_final for s in stages})
-    return Refit(len(d), co["trained_through"].iloc[0], stages, co)
+    results = [walk_forward(d, s, spec) for s in stages(spec)]
+    co = final_fit(d, {s.stage: s.k_final for s in results}, spec)
+    return Refit(len(d), co["trained_through"].iloc[0], results, co)
 
 
 # ---------------------------------------------------------------- comparison and report
