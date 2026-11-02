@@ -1,0 +1,52 @@
+[
+ {
+  "id": "W45-1",
+  "kind": "other",
+  "check": "settlement_vs_transcript:kalshi_yes_we_miss",
+  "title": "Word matching misses Roman numerals and dotted abbreviations (Basel III, U.K.)",
+  "why": "Kalshi settled WFC and C \"Basel 3\" YES; our transcripts say \"Basel III\" (WFC 3 times, C 2 times, said by executives). HOOD \"UK / United Kingdom\" settled YES; the executive said \"U.K.\". The counting views (mv_word_counts / mkt_word_hits in Neon) treat these as different words, so history features and the label audit undercount them. Fix: when building the match pattern for a market word, accept 1-10 as Roman numerals and allow periods between capital letters. This is a migration to those views; I can draft it once you approve the approach.",
+  "evidence": [
+   "transcript 2036 (WFC Oct 13): \"Basel III\" x3",
+   "transcript 2022 (C Oct 13): \"Basel III\" x2",
+   "transcript 2105 (HOOD Oct 27): \"U.K.\""
+  ],
+  "sql": ""
+ },
+ {
+  "id": "W45-2",
+  "kind": "data_fix",
+  "check": "settlement_vs_transcript:kalshi_yes_we_miss",
+  "title": "Three transcripts look incomplete or from the wrong call (BB, EBAY, UAL)",
+  "why": "BB \"Alloy Kore\" (event 26DEC31) is checked against a June 25 Equibles transcript, so it's the wrong call. EBAY \"Goldin\" (Oct 28) and UAL \"Coastliner\" (Oct 21) settled YES with zero hits in our Fool transcripts, which suggests those transcripts are missing part of the call. Next step: re-fetch EBAY and UAL from Fortune, and stop matching BB's December event to an old transcript.",
+  "evidence": [
+   "transcript 1388 (BB, 2026-06-25, equibles)",
+   "transcript 2116 (EBAY, Oct 28, fool): 0 hits",
+   "transcript 2055 (UAL, Oct 21, fool): 0 hits"
+  ],
+  "sql": ""
+ },
+ {
+  "id": "W45-3",
+  "kind": "data_fix",
+  "check": "settlement_vs_transcript",
+  "title": "Speaker or call mismatches: BA \"F-47\" and SPCX \"Colossus\"",
+  "why": "Rules count only company representatives (including the operator). BA \"F-47\" settled YES but our transcript has it only from an analyst, so the speaker is probably misattributed. SPCX \"Colossus\" settled NO, yet our SPCX transcript has an executive saying \"Colossus II\" about the Memphis supercomputer cluster, which may be another company's call matched to SPCX. Check the SPCX transcript's source page and the BA speaker labels before trusting either call's history.",
+  "evidence": [
+   "transcript 2093 (BA Oct 27): F-47 in an analyst turn only",
+   "transcript 2048 (SPCX, Oct 21): \"Colossus II\" in an exec turn"
+  ],
+  "sql": ""
+ },
+ {
+  "id": "W45-4",
+  "kind": "other",
+  "check": "transcript_gaps_30d",
+  "title": "Transcript-gap check flags filings that have no earnings call (LUCID, PGR, RACE)",
+  "why": "All four gaps come from filings, not Kalshi calls. LUCID (Oct 5), PGR (Oct 14, Progressive's monthly results) and RACE (Oct 16) have no mentions markets within a week of those dates, so there's no call to transcribe. EBAY's gap date (Oct 22) is a week before its real call (Oct 28), and that call's transcript exists. Each week this sends Fortune and Equibles looking for transcripts that don't exist. Fix: have v_transcript_gaps count a filing only when a mentions event closes within 7 days of it.",
+  "evidence": [
+   "0 KXEARNINGSMENTION markets for LUCID/PGR/RACE within 7 days of the gap date",
+   "EBAY transcript 2116 dated Oct 28"
+  ],
+  "sql": ""
+ }
+]
