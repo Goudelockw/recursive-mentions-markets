@@ -1,0 +1,11 @@
+sheet_date,call_date,call_time_et,symbol,word,ticker,phase,action,side,cost_c,yes_bid_c,yes_ask_c,model_c,fundamental_c,edge_c,stake_pct,fav_side,fav_price_c,avoid_points,avoid_tier,risk_read,risk_note,data_issues
+2026-11-05,2026-11-05,Thu Nov 05 08:00 am,AAP,Tailwind,KXEARNINGSMENTIONAAP-26NOV05-TAIL,ENTRY 2 - release out,TRADE,NO,36.0,64.0,68.0,60.2,55.0,2.2,0.44,YES,66.0,3,OK,Neutral,fading the favorite (3 pts),
+2026-11-05,2026-11-05,Thu Nov 05 08:30 am,WEN,Project Fresh,KXEARNINGSMENTIONWEN-26NOV05-PROJ,Hold - dead zone,TRADE,YES,24.0,20.0,24.0,36.4,93.0,11.1,1.86,NO,78.0,1,OK,Neutral,fading the favorite (1 pt),
+2026-11-05,2026-11-05,Thu Nov 05 08:30 am,WEN,Biggie Bundle,KXEARNINGSMENTIONWEN-26NOV05-BIGG,Hold - dead zone,TRADE,NO,73.0,27.0,31.0,23.0,26.0,2.6,1.26,NO,71.0,2,OK,Neutral,backing the favorite (2 pts),
+2026-11-05,2026-11-05,Thu Nov 05 04:30 pm,AAOI,Quantum,KXEARNINGSMENTIONAAOI-26NOV05-QUAN,Hold - dead zone,TRADE+,NO,48.0,52.0,56.0,44.8,48.0,5.4,2.0,YES,54.0,4,AVOID,Aligned,fading an AVOID favorite (4 pts),
+2026-11-05,2026-11-05,Thu Nov 05 04:30 pm,AAOI,FCC / Federal Communications Commission,KXEARNINGSMENTIONAAOI-26NOV05-FCC,Hold - dead zone,TRADE,NO,86.0,14.0,16.0,8.8,10.0,4.4,2.0,NO,85.0,0,OK,Neutral,backing the favorite (0 pts),
+2026-11-05,2026-11-05,Thu Nov 05 04:30 pm,AAOI,Mediacom,KXEARNINGSMENTIONAAOI-26NOV05-MEDI,Hold - dead zone,TRADE,NO,55.0,45.0,53.0,40.3,31.0,2.9,0.85,NO,51.0,2,OK,Neutral,backing the favorite (2 pts),
+2026-11-05,2026-11-05,Thu Nov 05 05:00 pm,KTOS,China,KXEARNINGSMENTIONKTOS-26NOV03-CHIN,Hold - dead zone,TRADE,NO,66.0,34.0,43.0,28.6,32.0,3.8,1.46,NO,61.5,1,OK,Neutral,backing the favorite (1 pt),
+2026-11-05,2026-11-05,Thu Nov 05 05:00 pm,LYFT,Oil / Gas / Gasoline,KXEARNINGSMENTIONLYFT-26NOV05-OIL,Hold - dead zone,TRADE,NO,68.0,32.0,35.0,21.9,18.0,8.6,2.0,NO,66.5,1,OK,Neutral,backing the favorite (1 pt),
+2026-11-05,2026-11-06,Fri Nov 06 08:30 am,OKLO,AI / Artificial Intelligence,KXEARNINGSMENTIONOKLO-26NOV10-AI,ENTRY 1 - 24h window,TRADE,YES,75.0,65.0,75.0,78.6,93.0,2.3,1.23,YES,70.0,0,OK,Neutral,backing the favorite (0 pts),
+2026-11-05,2026-11-06,Fri Nov 06 10:00 am,VST,Moss Landing,KXEARNINGSMENTIONVST-26NOV06-MOSS,ENTRY 1 - 24h window,TRADE,NO,72.0,28.0,32.0,20.8,24.0,5.8,2.0,NO,70.0,0,OK,Neutral,backing the favorite (0 pts),
