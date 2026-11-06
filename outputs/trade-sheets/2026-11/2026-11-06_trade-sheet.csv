@@ -1,0 +1,3 @@
+sheet_date,call_date,call_time_et,symbol,word,ticker,phase,action,side,cost_c,yes_bid_c,yes_ask_c,model_c,fundamental_c,edge_c,stake_pct,fav_side,fav_price_c,avoid_points,avoid_tier,risk_read,risk_note,data_issues
+2026-11-06,2026-11-06,Fri Nov 06 08:30 am,DKNG,Regulation,KXEARNINGSMENTIONDKNG-26NOV06-REGU,Hold - dead zone,TRADE+,NO,47.0,53.0,54.0,46.8,42.0,4.5,1.64,YES,53.5,4,AVOID,Aligned,fading an AVOID favorite (4 pts),
+2026-11-06,2026-11-06,Fri Nov 06 10:00 am,VST,Moss Landing,KXEARNINGSMENTIONVST-26NOV06-MOSS,Hold - dead zone,TRADE,NO,67.0,33.0,41.0,25.7,24.0,5.7,2.0,NO,63.0,3,OK,Neutral,backing the favorite (3 pts),
